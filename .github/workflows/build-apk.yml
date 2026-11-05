@@ -14,7 +14,9 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - run: npm install
       - run: npm run prepare-www
+      - run: ls -la www www/engine www/lib
       - run: npx cap add android
+      - run: sed -i '0,/<activity/s//<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
       - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4

@@ -1,26 +1,26 @@
-// Copia index.html, chess.js y stockfish a www/ para Capacitor
 const fs = require('fs'), path = require('path');
 const out = 'www';
 fs.rmSync(out, { recursive: true, force: true });
-fs.mkdirSync(path.join(out, 'lib'), { recursive: true });
-fs.mkdirSync(path.join(out, 'engine'), { recursive: true });
+for (const d of ['lib', 'engine']) fs.mkdirSync(path.join(out, d), { recursive: true });
 fs.copyFileSync('index.html', path.join(out, 'index.html'));
 
-function first(cands, label) {
-  const f = cands.find(p => fs.existsSync(p));
-  if (!f) { console.error('No encontré ' + label + '. Probé:\n' + cands.join('\n')); process.exit(1); }
-  return f;
-}
-const chess = first([
-  'node_modules/chess.js/dist/esm/chess.js',
-  'node_modules/chess.js/dist/chess.js'
-], 'chess.js');
+const walk = d => !fs.existsSync(d) ? [] : fs.readdirSync(d, { withFileTypes: true }).flatMap(e =>
+  e.isDirectory() ? (e.name === 'node_modules' ? [] : walk(path.join(d, e.name))) : [path.join(d, e.name)]);
+const die = m => { console.error(m); process.exit(1); };
+
+// chess.js (ESM)
+const cf = walk('node_modules/chess.js').filter(f => /chess\.js$/.test(f));
+const chess = cf.find(f => f.includes('esm')) || cf[0] || die('No encontre chess.js');
 fs.copyFileSync(chess, path.join(out, 'lib/chess.js'));
 
-const sf = first([
-  'node_modules/stockfish/src/stockfish.js',
-  'node_modules/stockfish/stockfish.js',
-  'node_modules/stockfish/src/stockfish-nnue-16-single.js'
-], 'stockfish');
-fs.copyFileSync(sf, path.join(out, 'engine/stockfish.js'));
-console.log('www listo:', chess, sf);
+// Stockfish: copia TODA la carpeta que contiene el motor (js + wasm)
+const all = walk('node_modules/stockfish');
+const js = all.filter(f => /stockfish[^\/\\]*\.js$/.test(f)).sort((a, b) => (b.includes('src') ? 1 : 0) - (a.includes('src') ? 1 : 0));
+if (!js.length) die('No encontre ningun stockfish*.js. Archivos:\n' + all.join('\n'));
+const dir = path.dirname(js[0]);
+for (const f of fs.readdirSync(dir)) {
+  const p = path.join(dir, f);
+  if (fs.statSync(p).isFile()) fs.copyFileSync(p, path.join(out, 'engine', f));
+}
+if (!fs.existsSync(path.join(out, 'engine/stockfish.js'))) fs.copyFileSync(js[0], path.join(out, 'engine/stockfish.js'));
+console.log('chess.js:', chess, '\nmotor:', dir, '\n', fs.readdirSync(path.join(out, 'engine')).join(', '));
