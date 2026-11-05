@@ -28,6 +28,10 @@ nav button{flex:1}
 input[type=range]{flex:1;accent-color:var(--ac)}
 small,#plan{color:var(--mut)}
 #pr button{font-size:30px;flex:1;padding:4px}
+.lesson{background:var(--pn);border:1px solid #3c545d;border-radius:10px;padding:12px;margin:8px 0}
+.lesson h3{margin:0 0 8px;color:var(--ac);font-size:18px}.lesson p{margin:7px 0}
+.lesson b{color:#f2b441}.lesson .tag{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+#altplay,#backline{flex:1}
 [hidden]{display:none!important}
 </style></head><body><main>
 <nav><button id="t1" class="on">Jugar</button><button id="t3">Dos jugadores</button><button id="t2">Teoría</button></nav>
@@ -44,7 +48,10 @@ small,#plan{color:var(--mut)}
 <section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button><button id="lfl">⇅ Girar</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p></section>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
- <div class="row"><button id="p0">⏮</button><button id="p1">◀</button><button id="p2">▶</button><span id="pn"></span></div>
+ <div class="row"><button id="p0">⏮ Inicio</button><button id="p1">◀ Anterior</button><button id="p2">Siguiente ▶</button><span id="pn"></span></div>
+ <div id="lesson" class="lesson"></div>
+ <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
+ <div class="row"><button id="backline">Volver a la línea del curso</button></div>
  <p id="plan"></p>
 </section>
 </main>
@@ -52,19 +59,23 @@ small,#plan{color:var(--mut)}
 import {Chess} from './lib/chess.js';
 const $=s=>document.querySelector(s),GL={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},V={p:100,n:320,b:330,r:500,q:900,k:0};
 const L=[
-["Londres vs ...d5 y ...Nf6","1.d4 d5 2.Bf4 Nf6 3.e3 e6 4.Nf3 Bd6 5.Bg3 O-O 6.Nbd2 c5 7.c3 Nc6 8.Bd3","Pirámide c3-d4-e3, alfil de f4 cambiado en g3 o d6, caballo a e5 y ataque de rey."],
-["Londres vs India de Rey","1.d4 Nf6 2.Nf3 g6 3.Bf4 Bg7 4.e3 O-O 5.h3 d6 6.Be2 Nbd7 7.O-O","h3 da retirada al alfil. Después Nbd2, c3 y Re1 o Qe2, con e4 como ruptura."],
-["Londres vs ...c5 (Qb6)","1.d4 d5 2.Nf3 Nf6 3.Bf4 c5 4.e3 Nc6 5.c3 Qb6 6.Qb3 c4 7.Qxb6 axb6","Contra ...Qb6 cambia damas con Qb3 o defiende con Qc1. Las negras quedan con peones débiles."],
-["Caro-Kann Clásica","1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Bf5 5.Ng3 Bg6 6.h4 h6 7.Nf3 Nd7 8.h5 Bh7 9.Bd3 Bxd3 10.Qxd3 e6","Alfil fuera de la cadena de peones, después ...e6, ...Ngf6 y ...Be7. Estructura sólida."],
-["Caro-Kann Avance","1.e4 c6 2.d4 d5 3.e5 Bf5 4.Nf3 e6 5.Be2 c5 6.Be3 Nc6","Alfil fuera y ruptura inmediata con ...c5 contra el centro blanco."],
-["Caro-Kann Panov","1.e4 c6 2.d4 d5 3.exd5 cxd5 4.c4 Nf6 5.Nc3 e6 6.Nf3 Be7 7.cxd5 Nxd5 8.Bd3 Nc6","Posición con peón aislado. Piezas activas y cuidado con el ataque blanco."],
-["Caro-Kann Cambio","1.e4 c6 2.d4 d5 3.exd5 cxd5 4.Bd3 Nc6 5.c3 Nf6 6.Bf4 Bg4","Estructura simétrica. Saca el alfil de c8 antes de ...e6."],
-["Ortodoxa del Gambito de Dama","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.e3 O-O 6.Nf3 Nbd7 7.Rc1 c6 8.Bd3 dxc4 9.Bxc4 Nd5","Cambios para liberar la posición con ...Nd5 y después ...e5 o ...c5."],
-["Ortodoxa: 5.Nf3","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.Nf3 O-O 6.e3 Nbd7 7.Rc1 c6 8.Qc2 a6","Mismo esquema con ...a6, preparando ...dxc4 y ...b5."]];
+["Clase 1 · Principios de apertura","1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O Be7","Aprende a ocupar el centro, desarrollar piezas menores y enrocar.","1.e4 controla d5 y libera piezas. Nf3 desarrolla atacando e5. Bb5 presiona al defensor. El enroque pone el rey a salvo y conecta las torres.","No saques la dama demasiado pronto ni muevas una pieza varias veces sin una razón táctica.","Aperturas · Principiante"],
+["Clase 2 · Sistema Londres: estructura","1.d4 d5 2.Bf4 Nf6 3.e3 e6 4.Nf3 Bd6 5.Bg3 O-O 6.Nbd2 c5 7.c3 Nc6 8.Bd3","Construye la estructura d4-e3-c3 y prepara e4 o un ataque de rey.","Bf4 desarrolla el alfil antes de cerrar la cadena con e3. Nf3 y Nbd2 desarrollan; c3 sostiene d4; Bd3 apunta al enroque.","No juegues e4 automáticamente si dejas d4 débil o permites ...cxd4 con ganancia de tiempo.","Aperturas · Londres"],
+["Clase 3 · Londres contra ...c5 y ...Qb6","1.d4 d5 2.Nf3 Nf6 3.Bf4 c5 4.e3 Nc6 5.c3 Qb6 6.Qb3 c4 7.Qxb6 axb6","Responde a la presión sobre b2 y aprende cuándo cambiar damas.","Qb3 ofrece el cambio de damas y reduce la presión sobre b2. Tras ...axb6, las negras aceptan peones doblados a cambio de actividad.","Una defensa pasiva de b2 puede retrasar tu desarrollo. Evalúa el final antes de cambiar damas.","Aperturas · Londres"],
+["Clase 4 · Caro-Kann: idea central","1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Bf5 5.Ng3 Bg6 6.h4 h6 7.Nf3 Nd7","La Caro-Kann golpea el centro con ...d5 y desarrolla pronto el alfil de c8.","...c6 prepara ...d5 sin encerrar el alfil. Tras el cambio en e4, ...Bf5 desarrolla esa pieza antes de ...e6.","La solidez no debe convertirse en pasividad: prepara ...c5 o ...e5 para disputar el centro.","Aperturas · Caro-Kann"],
+["Clase 5 · Caro-Kann Avance","1.e4 c6 2.d4 d5 3.e5 Bf5 4.Nf3 e6 5.Be2 c5 6.Be3 Nc6","Ataca la base del centro blanco antes de quedar restringido.","...Bf5 saca el alfil antes de cerrar la diagonal. ...c5 golpea d4 y obliga a las blancas a sostener su centro.","No te limites a desarrollar detrás de tus peones: si no atacas el centro, las blancas ganan espacio.","Aperturas · Caro-Kann"],
+["Clase 6 · Caro-Kann Clásica","1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Bf5 5.Ng3 Bg6 6.h4 h6 7.Nf3 Nd7 8.h5 Bh7 9.Bd3 Bxd3 10.Qxd3 e6","Comprende el desarrollo negro y el plan de espacio blanco en el flanco de rey.","El alfil sale antes de ...e6 y luego se repliega. ...Nd7 y ...e6 completan el desarrollo y preparan ...Ngf6.","No ignores el espacio que gana el rival en el flanco de rey ni avances peones sin desarrollar piezas.","Aperturas · Caro-Kann"],
+["Clase 7 · Medio juego: actividad y plan","1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.c3 Nf6 5.d4 exd4 6.cxd4 Bb4+ 7.Nc3","Convierte desarrollo y estructura en un plan concreto.","d4 abre líneas y gana espacio. Las piezas deben ocupar columnas y diagonales abiertas; responder al jaque con desarrollo mejora la coordinación.","Antes de atacar, comprueba si participan tus piezas. Una torre bloqueada por tus propios peones no ejerce presión.","Medio juego · Planes"],
+["Clase 8 · Táctica: captura distraída y mate","1.e4 e5 2.Nf3 d6 3.Bc4 Bg4 4.Nc3 g6 5.Nxe5 Bxd1 6.Bxf7+ Ke7 7.Nd5#","Una trampa clásica enseña por qué no se debe capturar material sin revisar los jaques.","Las blancas aprovechan que las negras toman la dama sin comprobar la seguridad del rey. Bxf7+ y Nd5 coordinan un mate.","Antes de capturar, busca jaques, capturas y amenazas del rival. La dama no compensa recibir mate.","Medio juego · Táctica y trampas"],
+["Clase 9 · Finales: actividad del rey","1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.d3 Nf6 5.O-O O-O 6.c3 d6 7.Re1 a6","En los finales el rey se convierte en una pieza activa.","En finales de peones, la oposición ayuda a impedir el avance del rey rival. Un peón pasado puede distraer al rey defensor.","No empujes un peón pasado sin calcular si el rey rival puede bloquearlo. Activa tu rey primero.","Finales · Fundamentos"],
+["Clase 10 · Finales de torres","1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O Be7 6.Re1 b5 7.Bb3 d6","Aprende a priorizar actividad de torres, columnas abiertas y cortar al rey.","Una torre activa detrás de un peón pasado o en séptima fila crea amenazas. La defensa lateral puede ser más eficaz que bloquear delante.","No cambies tu torre activa por una pasiva sin razón concreta ni persigas peones dejando entrar al rey.","Finales · Torres"],
+["Clase 11 · Trampas históricas: Legal","1.e4 e5 2.Nf3 d6 3.Bc4 Bg4 4.Nc3 g6 5.Nxe5 Bxd1 6.Bxf7+ Ke7 7.Nd5#","Una combinación clásica muestra que sacrificar la dama puede conducir a mate forzado.","El patrón combina desarrollo, rey rival en el centro y jaques coordinados. La secuencia final es mate, no una simple ganancia material.","Memoriza el patrón, no una receta: si el rival cambia el orden o defiende una casilla clave, la combinación puede no funcionar.","Partidas y trampas · Clásicos"],
+["Clase 12 · Masterización: pensar como jugador completo","1.d4 d5 2.Bf4 Nf6 3.e3 e6 4.Nf3 Bd6 5.Bg3 O-O 6.Nbd2 c5 7.c3 Nc6 8.Bd3","Reto final: evalúa estructura, seguridad de reyes, pieza peor colocada, ruptura y plan para tres jugadas.","Un plan nace de evaluar material, seguridad de los reyes, actividad, estructura y amenazas. Elige una mejora concreta y comprueba la respuesta rival.","No existe una jugada automática que gane siempre. Dominar significa justificar decisiones y adaptarse a los cambios del rival.","Masterización · Evaluación completa"]
+];
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
 let evalBusy=false,localFlip=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
-const T={c:new Chess(),m:[],i:0};
+const T={c:new Chess(),m:[],i:0,branch:false,lesson:0};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
 const CAND=['stockfish-nnue-16-single.js','stockfish.js','stockfish-nnue-16-asm.js'];
 const tryEngine=f=>new Promise(res=>{let w;try{w=new Worker('engine/'+f)}catch(e){engErr=f+': '+e.message;return res(null)}
@@ -170,11 +181,14 @@ function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel: juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
 function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
-function line_(){const l=L[+$('#ln').value];T.m=l[1].split(/\s+/).map(t=>t.replace(/^\d+\./,'')).filter(Boolean);T.i=0;$('#plan').textContent=l[2];step(0)}
-function step(d,abs){T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}
- $('#pn').textContent=T.i+'/'+T.m.length;render()}
+function showLesson(){const l=L[T.lesson];$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Objetivo:</b> '+l[2]+'</p><p><b>Por qué funciona:</b> '+l[3]+'</p><p><b>Qué evitar:</b> '+l[4]+'</p>';$('#plan').textContent='Avanza por la línea principal y después prueba otra jugada legal para ver la respuesta del motor.'}
+function fillAlternatives(){const sel=$('#alt');sel.innerHTML='<option value="">Elige una jugada alternativa…</option>';if(T.branch)return;for(const m of T.c.moves({verbose:true}))sel.add(new Option(m.san+' · '+m.from+' → '+m.to,m.from+' '+m.to+(m.promotion?' '+m.promotion:'')))}
+function line_(){T.lesson=+$('#ln').value;T.m=L[T.lesson][1].split(/\\s+/).map(m=>m.replace(/^\\d+\\./,'')).filter(Boolean);T.i=0;T.branch=false;showLesson();step(0,0)}
+function step(d,abs){if(T.branch){say('Estás explorando una variante. Pulsa «Volver a la línea del curso» para continuar.');return}T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}$('#pn').textContent='Jugada '+T.i+' de '+T.m.length;fillAlternatives();render()}
+async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.c.move({from,to,promotion});T.branch=true;render();say('Has probado '+m.san+'. El motor calcula la mejor respuesta…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best;const reply=T.c.moves({square:x.slice(0,2),verbose:true}).find(y=>y.to===x.slice(2,4));if(reply){T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
+function resetLine(){T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
-$('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);
+$('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;
 $('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;localFlip=false;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
 $('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;localFlip=false;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};$('#lfl').onclick=()=>{localFlip=!localFlip;render()};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
