@@ -121,7 +121,7 @@ const vib=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
 function tap(sq){if((mode!=='play'&&mode!=='local')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me))return;const c=G.g;
  if(G.sel){const ms=c.moves({square:G.sel,verbose:true}).filter(x=>x.to===sq);
   if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return move({from:G.sel,to:sq})}}
- const p=c.get(sq);G.sel=p&&p.color===G.me?sq:null;render()}
+ const p=c.get(sq),sideToMove=c.turn();G.sel=p&&p.color===(mode==='local'?sideToMove:G.me)?sq:null;render()}
 function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{const m={...G.pm,promotion:t};G.pm=null;p.hidden=true;move(m)};p.append(b)}}
 async function move(m){
  const before=G.g.fen(),mover=G.g.turn(),san=G.g.move(m).san,afterFen=G.g.fen();
