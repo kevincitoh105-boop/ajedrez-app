@@ -12,7 +12,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -34,7 +33,6 @@ jobs:
       - name: Generate Android project
         run: |
           npx cap add android
-          sed -i '0,/<activity/s//<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
           npx cap sync android
       - name: Build APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
