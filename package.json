@@ -1,4 +1,19 @@
-{"name":"maestro-ajedrez","version":"2.0.0","private":true,
- "scripts":{"stockfish":"node scripts/get-stockfish.js","test:engine":"node scripts/test-engine.js"},
- "dependencies":{"@capacitor/android":"^6.1.0","@capacitor/core":"^6.1.0","stockfish":"^16.0.0"},
- "devDependencies":{"@capacitor/cli":"^6.1.0"}}
+{
+  "name": "maestro-ajedrez",
+  "version": "2.1.0",
+  "private": true,
+  "scripts": {
+    "prepare-www": "node scripts/prepare-www.js",
+    "stockfish": "node scripts/get-stockfish.js",
+    "test:engine": "node scripts/test-engine.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "chess.js": "1.4.0",
+    "stockfish": "16.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}
