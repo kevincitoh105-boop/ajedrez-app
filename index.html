@@ -114,10 +114,10 @@ function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['
 async function move(m){
  const before=G.g.fen(),mover=G.g.turn(),san=G.g.move(m).san,afterFen=G.g.fen();
  G.sel=null;G.hint=null;vib();render();
- if(mode==='play'||mode==='local')await diagnoseMove(before,afterFen,mover,san);
+ if(mode==='play'||mode==='local')await diagnoseMove(before,afterFen,mover,san,m.from+m.to+(m.promotion||''));
  await after();
 }
-async function diagnoseMove(before,afterFen,mover,san){
+async function diagnoseMove(before,afterFen,mover,san,uci){
  if(!sf||evalBusy)return;
  evalBusy=true;
  try{
@@ -135,7 +135,8 @@ async function diagnoseMove(before,afterFen,mover,san){
    else if(rm&&rm.san.includes('#'))reason.push('El rival dispone de jaque mate.');
   }
   let label,detail;
-  if(loss<=18){label=(loss<=8?'GENIAL':'BUENA');detail=loss<=8?'Casi no pierdes valor respecto a la mejor continuación.':'Mantienes prácticamente la evaluación de la posición.'}
+  if(loss<=8&&a.best===uci&&(san.includes('x')||san.includes('+')||san.includes('#')||uci.length>4)){label='GENIAL';detail='Stockfish confirma que encontraste la mejor jugada y además resuelve una situación táctica.'}
+  else if(loss<=18){label='BUENA';detail='Casi no pierdes valor respecto a la mejor continuación.'}
   else if(loss<=55){label='BUENA';detail='La jugada conserva casi toda la evaluación.'}
   else if(loss<=120){label='MALA';detail='Había una continuación claramente mejor; pierdes aproximadamente '+loss+' centipeones.'}
   else if(loss<=250){label='MUY MALA';detail='La jugada empeora mucho la posición, unos '+loss+' centipeones.'}
@@ -159,8 +160,9 @@ async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Moto
   const s2=c.isCheckmate()?1000:c.isDraw()?0:-(await ask(c.fen(),'depth 8',20)).score;tot+=Math.min(500,Math.max(0,s1-s2));k++}else c.move(m.san)}
  G.busy=false;const acpl=tot/k;const band=acpl<20?'1900–2200':acpl<35?'1700–2000':acpl<50?'1500–1800':acpl<70?'1300–1600':acpl<95?'1000–1400':acpl<130?'800–1200':'menor de 1100';
  const games=JSON.parse(localStorage.eloGames||'[]');games.push({date:Date.now(),acpl:Math.round(acpl),moves:k});localStorage.eloGames=JSON.stringify(games.slice(-10));
- const avg=games.slice(-5).reduce((a,x)=>a+x.acpl,0)/Math.min(5,games.length);const stable=games.length>=5;
- localStorage.elo=stable?band:(band+' (provisional)');const lv=Math.min(20,Math.max(0,Math.round((1700-avg)/45)+8));$('#lv').value=lv;lvl();
+ const avg=games.slice(-5).reduce((a,x)=>a+x.acpl,0)/Math.min(5,games.length);const stable=games.length>=5;const ref=stable?avg:acpl;
+ const band5=ref<20?'1900–2200':ref<35?'1700–2000':ref<50?'1500–1800':ref<70?'1300–1600':ref<95?'1000–1400':ref<130?'800–1200':'menor de 1100';
+ localStorage.elo=stable?band5:(band5+' (provisional)');const lv=Math.min(20,Math.max(0,Math.round((1700-avg)/45)+8));$('#lv').value=lv;lvl();
  say('Pérdida media: '+Math.round(acpl)+' cp por jugada. Banda orientativa: '+band+' Elo. '+(stable?'Basada en las últimas 5 pruebas.':'Aún provisional: hacen falta 5 pruebas para suavizar la variación.')+' No es Elo FIDE ni rating oficial.');eloTxt()}
 const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent='Rival nivel '+v+' · ≈ Elo '+(1100+v*95)};
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
