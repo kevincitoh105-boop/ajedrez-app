@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maestro de Ajedrez</title>
+<style>
+:root{--bg:#16232a;--ink:#f1ead7;--lt:#e3d3ab;--dk:#587a6c;--ac:#f2b441;--mut:#9fb3ad;--pn:#22343c;--bd:min(100vw - 20px,480px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Georgia,serif;padding:calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 12px);display:flex;justify-content:center}
+main{width:var(--bd)}
+nav{display:flex;gap:6px;margin-bottom:8px}
+button,select{font:inherit;color:var(--ink);background:var(--pn);border:1px solid #3c545d;border-radius:8px;padding:9px 12px}
+button:disabled{opacity:.4}
+button.on,button.go{background:var(--ac);color:#1b1b1b;border-color:var(--ac)}
+nav button{flex:1}
+#board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--bd);height:var(--bd);border:2px solid #0d161a;border-radius:4px;overflow:hidden;user-select:none;touch-action:manipulation}
+.sq{display:flex;align-items:center;justify-content:center;font-size:calc(var(--bd)/8*.8);line-height:1;position:relative}
+.l{background:var(--lt)}.d{background:var(--dk)}
+.w{color:#fff;text-shadow:0 0 3px #000,0 0 1px #000}.b{color:#101010}
+.sel{box-shadow:inset 0 0 0 4px var(--ac)}
+.last{background-image:linear-gradient(rgba(242,180,65,.45),rgba(242,180,65,.45))}
+.tg::after{content:"";width:28%;height:28%;border-radius:50%;background:rgba(20,30,30,.45);position:absolute}
+#st{margin:6px 0;min-height:3em}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;align-items:center}
+input[type=range]{flex:1;accent-color:var(--ac)}
+small,#plan{color:var(--mut)}
+[hidden]{display:none!important}
+</style></head><body><main>
+<nav><button id="t1" class="on">Jugar</button><button id="t2">Teoría</button></nav>
+<div id="st"></div>
+<div id="board"></div>
+<section id="play">
+ <div class="row"><label>Tu color <select id="col"><option value="w">Blancas</option><option value="b">Negras</option></select></label></div>
+ <div class="row"><input type="range" id="lv" min="0" max="20"><span id="lvt"></span></div>
+ <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button></div>
+ <small id="elo"></small>
+</section>
+<section id="theory" hidden>
+ <div class="row"><select id="ln" style="width:100%"></select></div>
+ <div class="row"><button id="p0">⏮</button><button id="p1">◀</button><button id="p2">▶</button><span id="pn"></span></div>
+ <p id="plan"></p>
+</section>
+</main>
+<script type="module">
+import {Chess} from './lib/chess.js';
+const $=s=>document.querySelector(s),GL={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+const L=[
+["Londres vs ...d5 y ...Nf6","1.d4 d5 2.Bf4 Nf6 3.e3 e6 4.Nf3 Bd6 5.Bg3 O-O 6.Nbd2 c5 7.c3 Nc6 8.Bd3","Pirámide c3-d4-e3, alfil de f4 cambiado en g3 o d6, caballo a e5 y ataque de rey."],
+["Londres vs India de Rey","1.d4 Nf6 2.Nf3 g6 3.Bf4 Bg7 4.e3 O-O 5.h3 d6 6.Be2 Nbd7 7.O-O","h3 da retirada al alfil. Después Nbd2, c3 y Re1 o Qe2, con e4 como ruptura."],
+["Londres vs ...c5 (Qb6)","1.d4 d5 2.Nf3 Nf6 3.Bf4 c5 4.e3 Nc6 5.c3 Qb6 6.Qb3 c4 7.Qxb6 axb6","Contra ...Qb6 cambia damas con Qb3 o defiende con Qc1. Las negras quedan con peones débiles."],
+["Caro-Kann Clásica","1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Bf5 5.Ng3 Bg6 6.h4 h6 7.Nf3 Nd7 8.h5 Bh7 9.Bd3 Bxd3 10.Qxd3 e6","Alfil fuera de la cadena de peones, después ...e6, ...Ngf6 y ...Be7. Estructura sólida."],
+["Caro-Kann Avance","1.e4 c6 2.d4 d5 3.e5 Bf5 4.Nf3 e6 5.Be2 c5 6.Be3 Nc6","Alfil fuera y ruptura inmediata con ...c5 contra el centro blanco."],
+["Caro-Kann Panov","1.e4 c6 2.d4 d5 3.exd5 cxd5 4.c4 Nf6 5.Nc3 e6 6.Nf3 Be7 7.cxd5 Nxd5 8.Bd3 Nc6","Posición con peón aislado. Piezas activas y cuidado con el ataque blanco."],
+["Caro-Kann Cambio","1.e4 c6 2.d4 d5 3.exd5 cxd5 4.Bd3 Nc6 5.c3 Nf6 6.Bf4 Bg4","Estructura simétrica. Saca el alfil de c8 antes de ...e6."],
+["Ortodoxa del Gambito de Dama","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.e3 O-O 6.Nf3 Nbd7 7.Rc1 c6 8.Bd3 dxc4 9.Bxc4 Nd5","Cambios para liberar la posición con ...Nd5 y después ...e5 o ...c5."],
+["Ortodoxa: 5.Nf3","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.Nf3 O-O 6.e3 Nbd7 7.Rc1 c6 8.Qc2 a6","Mismo esquema con ...a6, preparando ...dxc4 y ...b5."]];
+let mode='play',FB=false,sf,ready=false,cur=null,score=0;
+const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false};
+const T={c:new Chess(),m:[],i:0};
+function init(){try{sf=new Worker('engine/stockfish.js');sf.onmessage=e=>line(String(e.data));sf.onerror=()=>{sf=null};sf.postMessage('uci')}catch(e){sf=null}}
+function line(l){if(l==='uciok')ready=true;const m=l.match(/score (cp|mate) (-?\d+)/);if(m)score=m[1]==='cp'?+m[2]:(+m[2]>0?1000:-1000);
+if(l.startsWith('bestmove')&&cur){const r=cur;cur=null;r({best:l.split(' ')[1],score})}}
+function fallback(fen){FB=true;const c=new Chess(fen),ms=c.moves({verbose:true}),caps=ms.filter(m=>m.captured),p=caps.length&&Math.random()<.6?caps:ms,m=p[Math.floor(Math.random()*p.length)];return{best:m.from+m.to+(m.promotion||''),score:0}}
+function ask(fen,go,lvl){return new Promise(res=>{if(!sf)return res(fallback(fen));const t0=Date.now();
+const run=()=>{if(!ready){if(Date.now()-t0>15000)return res(fallback(fen));return setTimeout(run,60)}
+cur=res;sf.postMessage('setoption name Skill Level value '+lvl);sf.postMessage('position fen '+fen);sf.postMessage('go '+go);
+setTimeout(()=>{if(cur===res){cur=null;res(fallback(fen))}},25000)};run()})}
+const say=t=>$('#st').textContent=t;
+const view=()=>mode==='play'?{c:G.g,f:G.me==='b'}:{c:T.c,f:false};
+function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
+const tg=mode==='play'&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[];
+for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
+d.className='sq '+((r+k)%2?'d':'l')+(mode==='play'&&sq===G.sel?' sel':'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg':'');
+if(p){const s=document.createElement('span');s.className=p.color;s.textContent=GL[p.type];d.append(s)}
+d.onclick=()=>tap(sq);b.append(d)}}
+function turnText(){const c=G.g;return(c.turn()===G.me?'Tu turno':'Piensa el rival')+(c.inCheck()?' · jaque':'')+(FB?' · motor básico (Stockfish no cargó)':'')}
+function overText(){const c=G.g;if(c.isCheckmate())return c.turn()===G.me?'Jaque mate. Perdiste.':'Jaque mate. ¡Ganaste!';return c.isDraw()?'Tablas.':''}
+function tap(sq){if(mode!=='play'||G.busy||G.over||G.g.turn()!==G.me)return;const c=G.g;
+if(G.sel){const m=c.moves({square:G.sel,verbose:true}).find(x=>x.to===sq);if(m){c.move({from:m.from,to:m.to,promotion:'q'});G.sel=null;render();return after()}}
+const p=c.get(sq);G.sel=p&&p.color===G.me?sq:null;render()}
+async function after(){const o=overText();if(o)return finish(o);say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
+async function engineTurn(){G.busy=true;say('Piensa el rival…');const r=await ask(G.g.fen(),'movetime '+(200+G.lvl*45),G.lvl),b=r.best;
+G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});G.busy=false;render();const o=overText();o?finish(o):say(turnText())}
+function finish(t){G.over=true;say(t);if(G.test)analyze()}
+async function analyze(){if(FB||!sf)return say('El test necesita Stockfish y no cargó. No se puede medir tu Elo.');
+const h=G.g.history({verbose:true}),n=h.filter(m=>m.color==='w').length;if(n<8)return say('Muy pocas jugadas para medir. Juega al menos 8 y repite el test.');
+G.busy=true;const c=new Chess();let tot=0,k=0;
+for(const m of h){if(m.color==='w'){say('Analizando tus jugadas '+(k+1)+'/'+n+'…');const s1=(await ask(c.fen(),'depth 8',20)).score;c.move(m.san);
+const s2=c.isCheckmate()?1000:c.isDraw()?0:-(await ask(c.fen(),'depth 8',20)).score;tot+=Math.min(500,Math.max(0,s1-s2));k++}else c.move(m.san)}
+G.busy=false;const acpl=tot/k,elo=Math.round(Math.max(500,Math.min(2900,3100*Math.exp(-.01*acpl))));
+localStorage.elo=elo;const lv=Math.min(20,Math.max(0,Math.round((elo-1100)/95)+1));$('#lv').value=lv;lvl();
+say('Elo estimado: '+elo+' (error medio '+Math.round(acpl)+' cp). Ajusté el rival a nivel '+lv+', un poco por encima de ti.');eloTxt()}
+const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent='Rival nivel '+v+' · ≈ Elo '+(1100+v*95)};
+const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Tu Elo estimado: '+localStorage.elo+'. El Elo del rival es aproximado.':'Aún no has hecho el test de nivel.';
+function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.test=test;G.me=test?'w':$('#col').value;G.lvl=test?6:+$('#lv').value;
+$('#un').disabled=test;render();say(test?'Test de nivel: juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
+function tabs(){$('#play').hidden=mode!=='play';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t2').className=mode==='theory'?'on':'';
+if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
+function line_(){const l=L[+$('#ln').value];T.m=l[1].split(/\s+/).map(t=>t.replace(/^\d+\./,'')).filter(Boolean);T.i=0;$('#plan').textContent=l[2];step(0)}
+function step(d,abs){T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}
+$('#pn').textContent=T.i+'/'+T.m.length;render()}
+L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
+$('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);
+$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
+$('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;
+$('#un').onclick=()=>{if(G.busy||G.test)return;G.g.undo();if(G.g.turn()!==G.me)G.g.undo();G.over=false;G.sel=null;render();say(turnText())};
+$('#rs').onclick=()=>{if(mode==='play'&&!G.over&&!G.busy){G.over=true;say('Te rendiste.');if(G.test)analyze()}};
+$('#lv').value=localStorage.lvl||8;lvl();eloTxt();init();start(false);
+if(!localStorage.elo)say('Pulsa «Test de nivel» para medir tu Elo y empezar desde ahí. O juega una partida libre.');
+</script></body></html>

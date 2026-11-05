@@ -1,0 +1,16 @@
+{
+  "name": "maestro-ajedrez",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare-www": "node scripts/prepare-www.js",
+    "sync": "npm run prepare-www && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "chess.js": "1.0.0",
+    "stockfish": "10.0.2"
+  }
+}
