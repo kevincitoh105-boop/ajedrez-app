@@ -30,7 +30,7 @@ small,#plan{color:var(--mut)}
 #pr button{font-size:30px;flex:1;padding:4px}
 [hidden]{display:none!important}
 </style></head><body><main>
-<nav><button id="t1" class="on">Jugar</button><button id="t2">Teoría</button></nav>
+<nav><button id="t1" class="on">Jugar</button><button id="t3">Dos jugadores</button><button id="t2">Teoría</button></nav>
 <div id="st"></div>
 <div id="pr" class="row" hidden></div>
 <div id="board"></div>
@@ -41,6 +41,7 @@ small,#plan{color:var(--mut)}
  <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button></div>
  <small id="elo"></small><br><small id="eng"></small>
 </section>
+<section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button><button id="lfl">⇅ Girar</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p></section>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
  <div class="row"><button id="p0">⏮</button><button id="p1">◀</button><button id="p2">▶</button><span id="pn"></span></div>
@@ -61,6 +62,7 @@ const L=[
 ["Ortodoxa del Gambito de Dama","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.e3 O-O 6.Nf3 Nbd7 7.Rc1 c6 8.Bd3 dxc4 9.Bxc4 Nd5","Cambios para liberar la posición con ...Nd5 y después ...e5 o ...c5."],
 ["Ortodoxa: 5.Nf3","1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5 Be7 5.Nf3 O-O 6.e3 Nbd7 7.Rc1 c6 8.Qc2 a6","Mismo esquema con ...a6, preparando ...dxc4 y ...b5."]];
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
+let evalBusy=false,localFlip=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
 const T={c:new Chess(),m:[],i:0};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
@@ -90,10 +92,10 @@ async function ask(fen,go,lvl){await EP;
 /* ---------- UI ---------- */
 const say=t=>$('#st').textContent=t;
 const flipped=()=>(G.me==='b')!==G.flip;
-const view=()=>mode==='play'?{c:G.g,f:flipped()}:{c:T.c,f:false};
+const view=()=>mode==='theory'?{c:T.c,f:false}:{c:G.g,f:mode==='local'?localFlip:flipped()};
 function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
- const tg=mode==='play'&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
+ const tg=(mode==='play'||mode==='local')&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
   d.className='sq '+((r+k)%2?'d':'l')+(mode==='play'&&sq===G.sel?' sel':'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
   if(p){const s=document.createElement('span');s.className=p.color;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
@@ -104,36 +106,75 @@ function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.boar
 function turnText(){const c=G.g;return(c.turn()===G.me?'Tu turno':'Piensa el rival')+(c.inCheck()?' · jaque':'')}
 function overText(){const c=G.g;if(c.isCheckmate())return c.turn()===G.me?'Jaque mate. Perdiste.':'Jaque mate. ¡Ganaste!';return c.isDraw()?'Tablas.':''}
 const vib=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
-function tap(sq){if(mode!=='play'||G.busy||G.over||G.pm||G.g.turn()!==G.me)return;const c=G.g;
+function tap(sq){if((mode!=='play'&&mode!=='local')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me))return;const c=G.g;
  if(G.sel){const ms=c.moves({square:G.sel,verbose:true}).filter(x=>x.to===sq);
   if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return move({from:G.sel,to:sq})}}
  const p=c.get(sq);G.sel=p&&p.color===G.me?sq:null;render()}
 function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{const m={...G.pm,promotion:t};G.pm=null;p.hidden=true;move(m)};p.append(b)}}
-function move(m){G.g.move(m);G.sel=null;G.hint=null;vib();render();after()}
-async function after(){const o=overText();if(o)return finish(o);say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
+function move(m){
+ const before=G.g.fen(),mover=G.g.turn(),san=G.g.move(m).san,afterFen=G.g.fen();
+ G.sel=null;G.hint=null;vib();render();
+ if(mode==='play'||mode==='local')diagnoseMove(before,afterFen,mover,san);
+ after();
+}
+async function diagnoseMove(before,afterFen,mover,san){
+ if(!sf||evalBusy)return;
+ evalBusy=true;
+ try{
+  say('Analizando tu jugada con Stockfish…');
+  const a=await ask(before,'depth 12',20),b=await ask(afterFen,'depth 12',20);
+  const loss=Math.max(0,Math.round(a.score+b.score));
+  const after=new Chess(afterFen),reply=await ask(afterFen,'depth 12',20);
+  let reason=[];
+  if(after.isCheck())reason.push('Tu rey queda en jaque.');
+  if(reply.score>850)reason.push('La posición permite una amenaza de mate muy peligrosa.');
+  if(reply.best){
+   const from=reply.best.slice(0,2),to=reply.best.slice(2,4),probe=new Chess(afterFen);
+   const rm=probe.moves({square:from,verbose:true}).find(x=>x.to===to);
+   if(rm&&rm.captured)reason.push('La mejor respuesta rival captura tu '+pieceName(rm.captured)+'.');
+   else if(rm&&rm.san.includes('#'))reason.push('El rival dispone de jaque mate.');
+  }
+  let label,detail;
+  if(loss<=18){label=(loss<=8?'GENIAL':'BUENA');detail=loss<=8?'Casi no pierdes valor respecto a la mejor continuación.':'Mantienes prácticamente la evaluación de la posición.'}
+  else if(loss<=55){label='BUENA';detail='La jugada conserva casi toda la evaluación.'}
+  else if(loss<=120){label='MALA';detail='Había una continuación claramente mejor; pierdes aproximadamente '+loss+' centipeones.'}
+  else if(loss<=250){label='MUY MALA';detail='La jugada empeora mucho la posición, unos '+loss+' centipeones.'}
+  else {label='MALÍSIMA';detail='Es un error grave: la evaluación cae unos '+loss+' centipeones.'}
+  if(reason.length)detail+=' '+reason.join(' ');
+  const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:10px;margin:8px 0;border:1px solid #71858a;border-radius:8px;background:#22343c';
+  box.textContent='Evaluación: '+label+' · '+san+'. '+detail;
+  const old=$('#move-review');if(old)old.remove();$('#mv').after(box);
+ }catch(e){say('Jugada realizada. No se pudo completar el análisis de esta jugada.')}
+ finally{evalBusy=false;if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
+}
+function pieceName(p){return ({p:'peón',n:'caballo',b:'alfil',r:'torre',q:'dama',k:'rey'})[p]||'pieza'}
+async function after(){const o=overText();if(o)return finish(o);if(mode==='local'){say((G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.');return}say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
 async function engineTurn(){G.busy=true;say('Piensa el rival…');const r=await ask(G.g.fen(),'movetime '+(200+G.lvl*45),G.lvl),b=r.best;setEng();
  G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});G.busy=false;vib();render();const o=overText();o?finish(o):say(turnText())}
 function finish(t){G.over=true;say(t);if(G.test)analyze()}
 async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Motor: '+engName+(engErr?' · '+engErr:'')));
- const h=G.g.history({verbose:true}),n=h.filter(m=>m.color==='w').length;if(n<8)return say('Muy pocas jugadas para medir. Juega al menos 8 y repite el test.');
+ const h=G.g.history({verbose:true}),n=h.filter(m=>m.color==='w').length;if(n<12)return say('Muestra insuficiente: juega al menos 12 jugadas con blancas y repite el test.');
  G.busy=true;const c=new Chess();let tot=0,k=0;
  for(const m of h){if(m.color==='w'){say('Analizando tus jugadas '+(k+1)+'/'+n+'…');const s1=(await ask(c.fen(),'depth 8',20)).score;c.move(m.san);
   const s2=c.isCheckmate()?1000:c.isDraw()?0:-(await ask(c.fen(),'depth 8',20)).score;tot+=Math.min(500,Math.max(0,s1-s2));k++}else c.move(m.san)}
- G.busy=false;const acpl=tot/k,elo=Math.round(Math.max(500,Math.min(2900,3100*Math.exp(-.01*acpl))));
- localStorage.elo=elo;const lv=Math.min(20,Math.max(0,Math.round((elo-1100)/95)+1));$('#lv').value=lv;lvl();
- say('Elo estimado: '+elo+' (error medio '+Math.round(acpl)+' cp). Ajusté el rival a nivel '+lv+', un poco por encima de ti.');eloTxt()}
+ G.busy=false;const acpl=tot/k;const band=acpl<20?'1900–2200':acpl<35?'1700–2000':acpl<50?'1500–1800':acpl<70?'1300–1600':acpl<95?'1000–1400':acpl<130?'800–1200':'menor de 1100';
+ const games=JSON.parse(localStorage.eloGames||'[]');games.push({date:Date.now(),acpl:Math.round(acpl),moves:k});localStorage.eloGames=JSON.stringify(games.slice(-10));
+ const avg=games.slice(-5).reduce((a,x)=>a+x.acpl,0)/Math.min(5,games.length);const stable=games.length>=5;
+ localStorage.elo=stable?band:(band+' (provisional)');const lv=Math.min(20,Math.max(0,Math.round((1700-avg)/45)+8));$('#lv').value=lv;lvl();
+ say('Pérdida media: '+Math.round(acpl)+' cp por jugada. Banda orientativa: '+band+' Elo. '+(stable?'Basada en las últimas 5 pruebas.':'Aún provisional: hacen falta 5 pruebas para suavizar la variación.')+' No es Elo FIDE ni rating oficial.');eloTxt()}
 const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent='Rival nivel '+v+' · ≈ Elo '+(1100+v*95)};
-const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Tu Elo estimado: '+localStorage.elo+'. El Elo del rival es aproximado.':'Aún no has hecho el test de nivel.';
+const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=test?'w':$('#col').value;G.lvl=test?6:+$('#lv').value;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel: juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#play').hidden=mode!=='play';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t2').className=mode==='theory'?'on':'';
+function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function line_(){const l=L[+$('#ln').value];T.m=l[1].split(/\s+/).map(t=>t.replace(/^\d+\./,'')).filter(Boolean);T.i=0;$('#plan').textContent=l[2];step(0)}
 function step(d,abs){T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}
  $('#pn').textContent=T.i+'/'+T.m.length;render()}
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
 $('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);
-$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
+$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;localFlip=false;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
+$('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;localFlip=false;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};$('#lfl').onclick=()=>{localFlip=!localFlip;render()};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
 $('#fl').onclick=()=>{G.flip=!G.flip;render()};
 $('#hn').onclick=async()=>{if(G.busy||G.over||G.test||G.g.turn()!==G.me)return;G.busy=true;say('Buscando una pista…');const r=await ask(G.g.fen(),'movetime 800',20);G.busy=false;
