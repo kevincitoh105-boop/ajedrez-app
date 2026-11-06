@@ -49,7 +49,7 @@ small,#plan{color:var(--mut)}
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
  <div class="row"><button id="p0">⏮ Inicio</button><button id="p1">◀ Anterior</button><button id="p2">Siguiente ▶</button><span id="pn"></span></div>
- <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div>
+ <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div><div id="lessonStep" class="lesson"></div>
  <div class="row"><button id="markDone" class="go">Marcar clase como completada</button></div>
  <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
  <div class="row"><button id="backline">Volver a la línea del curso</button></div>
@@ -130,34 +130,49 @@ async function move(m){
  await after();
 }
 async function diagnoseMove(before,afterFen,mover,san,uci){
- if(!sf||evalBusy)return;
+ if(evalBusy)return;
  evalBusy=true;
  try{
-  say('Analizando tu jugada con Stockfish…');
-  const a=await ask(before,'depth 12',20),b=await ask(afterFen,'depth 12',20);
-  const loss=Math.max(0,Math.round(a.score+b.score));
-  const after=new Chess(afterFen),reply=b;
-  let reason=[];
-  if(after.isCheck())reason.push('Tu rey queda en jaque.');
-  if(reply.score>850)reason.push('La posición permite una amenaza de mate muy peligrosa.');
-  if(reply.best){
-   const from=reply.best.slice(0,2),to=reply.best.slice(2,4),probe=new Chess(afterFen);
-   const rm=probe.moves({square:from,verbose:true}).find(x=>x.to===to);
-   if(rm&&rm.captured)reason.push('La mejor respuesta rival captura tu '+pieceName(rm.captured)+'.');
-   else if(rm&&rm.san.includes('#'))reason.push('El rival dispone de jaque mate.');
+  say('Analizando tu jugada y comparándola con la mejor alternativa…');
+  const best=await ask(before,'depth 14',20);
+  const playedEval=await ask(afterFen,'depth 14',20);
+  const playedPerspective=-playedEval.score;
+  let bestPerspective=playedPerspective,bestSan='No disponible',bestMove=null;
+  if(best.best&&best.best!=='(none)'){
+   const reference=new Chess(before),u=best.best;
+   try{
+    bestMove=reference.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});
+    bestSan=bestMove.san;
+    const afterBest=await ask(reference.fen(),'depth 14',20);
+    bestPerspective=-afterBest.score;
+   }catch(e){}
   }
-  let label,detail;
-  if(loss<=8&&a.best===uci&&(san.includes('x')||san.includes('+')||san.includes('#')||uci.length>4)){label='GENIAL';detail='Stockfish confirma que encontraste la mejor jugada y además resuelve una situación táctica.'}
-  else if(loss<=18){label='BUENA';detail='Casi no pierdes valor respecto a la mejor continuación.'}
-  else if(loss<=55){label='BUENA';detail='La jugada conserva casi toda la evaluación.'}
-  else if(loss<=120){label='MALA';detail='Había una continuación claramente mejor; pierdes aproximadamente '+loss+' centipeones.'}
-  else if(loss<=250){label='MUY MALA';detail='La jugada empeora mucho la posición, unos '+loss+' centipeones.'}
-  else {label='MALÍSIMA';detail='Es un error grave: la evaluación cae unos '+loss+' centipeones.'}
-  if(reason.length)detail+=' '+reason.join(' ');
-  const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:10px;margin:8px 0;border:1px solid #71858a;border-radius:8px;background:#22343c';
-  box.textContent='Evaluación: '+label+' · '+san+'. '+detail;
+  const loss=Math.max(0,Math.round(bestPerspective-playedPerspective));
+  const played=new Chess(before),actual=played.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
+  const after=new Chess(afterFen),facts=[];
+  if(actual.captured)facts.push('Has capturado '+pieceName(actual.captured)+'. Comprueba si la pieza capturada estaba defendida y qué queda desprotegido después del cambio.');
+  if(actual.san.includes('+'))facts.push('Has dado jaque. Un jaque obliga al rival a responder, pero no siempre es bueno: revisa si ganas algo o solo ayudas a desarrollar sus piezas.');
+  if(actual.san.includes('#'))facts.push('¡Jaque mate! El rey rival no tiene ninguna respuesta legal.');
+  if(actual.flags.includes('k')||actual.flags.includes('q'))facts.push('Has enrocado: apartas al rey del centro y conectas las torres.');
+  if(['e4','d4','e5','d5'].includes(actual.to))facts.push('Esta jugada influye directamente en el centro, que da espacio y casillas de entrada a tus piezas.');
+  if(actual.piece==='n'||actual.piece==='b')facts.push('Al desarrollar una pieza menor, intenta que ataque o controle casillas centrales y que no tenga que moverse varias veces.');
+  if(actual.piece==='q'&&played.history().length<12)facts.push('Sacar la dama temprano puede exponerla a ataques que hacen perder tiempos. Hazlo solo si existe una razón concreta.');
+  if(actual.piece==='p'&&!actual.captured&&!['e4','d4','e5','d5'].includes(actual.to))facts.push('Cada avance de peón deja casillas detrás que ya no podrán ser defendidas por otro peón. Pregúntate qué casillas debilitas.');
+  if(after.isCheck())facts.push('Tu rey está en jaque: la prioridad es salir del jaque, no continuar con un plan.');
+  const label=loss<=10?'EXCELENTE':loss<=30?'BUENA':loss<=70?'IMPRECISA':loss<=130?'MALA':loss<=250?'MUY MALA':'ERROR GRAVE';
+  const color=loss<=30?'#9bd6a5':loss<=70?'#f2d27a':'#ff9999';
+  const how='Para detectarlo tú mismo, antes de mover aplica este orden: 1) ¿Qué jaques tiene el rival? 2) ¿Qué piezas puede capturar? 3) ¿Qué amenaza? 4) ¿Mi pieza quedará defendida? 5) ¿Mi jugada desarrolla, mejora una pieza o crea una amenaza real?';
+  const why=loss<=30?'La evaluación apenas empeora frente a la mejor opción calculada. Aun así, revisa las amenazas del rival en la siguiente jugada.':loss<=70?'La idea puede ser razonable, pero había una continuación más precisa. Compara qué pieza mejora cada opción y qué amenazas permite.':'La alternativa del motor conserva bastante mejor la posición. Busca qué amenaza concreta no atendiste: una pieza atacada, un jaque, una captura o una casilla débil.';
+  const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:12px;margin:8px 0;border:1px solid #71858a;border-radius:10px;background:#22343c;line-height:1.5';
+  const title=document.createElement('h3');title.style.cssText='margin:0 0 8px;color:'+color;title.textContent='Tu jugada: '+label+' · '+san+' · pérdida estimada '+loss+' cp';box.append(title);
+  const p=document.createElement('p');p.textContent=why;box.append(p);
+  const alt=document.createElement('p');alt.innerHTML='<b>Mejor opción:</b> ';alt.append(document.createTextNode(bestSan+(bestMove?' ('+bestMove.from+' → '+bestMove.to+')':'')+'. '));box.append(alt);
+  const explain=document.createElement('p');explain.innerHTML='<b>¿Por qué era mejor?</b> ';explain.append(document.createTextNode(bestMove?'El motor la prefiere porque, tras calcular las respuestas, deja una evaluación aproximadamente '+Math.max(0,Math.round(bestPerspective-playedPerspective))+' centipeones mejor que tu jugada. Mira qué pieza activa, qué amenaza crea o qué peligro evita.':'No se pudo obtener una variante alternativa fiable en este análisis.'));box.append(explain);
+  const detail=document.createElement('p');detail.innerHTML='<b>Qué ocurre con tu jugada:</b> ';detail.append(document.createTextNode(facts.join(' ')||'No aparece un motivo táctico elemental evidente. Compara la seguridad de las piezas y el plan de ambos bandos.'));box.append(detail);
+  const tip=document.createElement('p');tip.innerHTML='<b>Cómo aprender a reconocerlo:</b> ';tip.append(document.createTextNode(how));box.append(tip);
+  const caveat=document.createElement('small');caveat.textContent='La valoración es una estimación del motor a profundidad limitada, no una verdad absoluta. En posiciones complejas puede cambiar al calcular más.';box.append(caveat);
   const old=$('#move-review');if(old)old.remove();$('#mv').after(box);
- }catch(e){say('Jugada realizada. No se pudo completar el análisis de esta jugada.')}
+ }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
  finally{evalBusy=false;if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
 }
 function pieceName(p){return ({p:'peón',n:'caballo',b:'alfil',r:'torre',q:'dama',k:'rey'})[p]||'pieza'}
@@ -183,11 +198,28 @@ function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;
 function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
-function showLesson(){const l=L[T.lesson];progressText();$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Objetivo:</b> '+l[2]+'</p><p><b>Por qué funciona:</b> '+l[3]+'</p><p><b>Qué evitar:</b> '+l[4]+'</p>';$('#plan').textContent='Avanza por la línea principal y después prueba otra jugada legal para ver la respuesta del motor.'}
+function showLesson(){const l=L[T.lesson];progressText();$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p><p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>';renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
+function renderLessonStep(){
+ const box=$('#lessonStep');if(!box)return;
+ const l=L[T.lesson],n=T.i;
+ if(!n){box.innerHTML='<div class="tag">Antes de empezar</div><h3>Cómo estudiar esta posición</h3><p>Primero identifica el centro (las casillas e4, d4, e5 y d5), después cuenta qué piezas están desarrolladas y comprueba si los dos reyes están seguros.</p><p><b>Pregunta guía:</b> si tu rival pudiera mover dos veces seguidas, ¿qué amenazaría? Esta pregunta te enseña a detectar peligros antes de ejecutar tu plan.</p>';return}
+ const c=new Chess();let last=null;try{T.m.slice(0,n).forEach(s=>{last=c.move(s)})}catch(e){box.textContent='No se pudo explicar esta posición porque la línea contiene una jugada inválida.';return}
+ const mover=last.color==='w'?'Blancas':'Negras',piece=pieceName(last.piece),target=last.to,kind=last.piece==='p'?'avance de peón':last.piece==='n'||last.piece==='b'?'desarrollo de pieza menor':last.piece==='q'?'movimiento de dama':last.piece==='r'?'actividad de torre':'movimiento del rey';
+ let idea='Observa qué casillas controla ahora la pieza y si queda protegida. Una jugada útil suele mejorar tu posición y limitar las opciones del rival.';
+ if(last.piece==='p')idea='Los peones construyen el centro y ganan espacio, pero no pueden retroceder. Antes de avanzar, comprueba qué casillas dejas débiles y si el rival puede atacar la base de tu cadena de peones.';
+ if(last.piece==='n')idea='Los caballos funcionan mejor cerca del centro, donde suelen controlar más casillas. Busca una casilla estable desde la que no puedan expulsarlos fácilmente con peones.';
+ if(last.piece==='b')idea='Los alfiles necesitan diagonales abiertas. Pregúntate si tus propios peones bloquean su recorrido y qué piezas o casillas importantes está mirando.';
+ if(last.piece==='q')idea='La dama es poderosa, pero también puede ser perseguida por piezas menores. Si sale pronto, calcula si el rival gana tiempos atacándola mientras desarrolla.';
+ if(last.piece==='r')idea='Las torres suelen ser más fuertes en columnas abiertas o semiabiertas. Intenta conectarlas y colocarlas detrás de peones pasados o en columnas donde puedan entrar.';
+ if(last.flags.includes('k')||last.flags.includes('q'))idea='El enroque es una jugada de seguridad: el rey se aleja del centro y una torre se acerca al juego. No lo hagas si la casilla de paso o de llegada está atacada.';
+ if(last.captured)idea+=' Además, has capturado una pieza: después de cualquier captura, comprueba si tu pieza queda recapturable y calcula el intercambio completo, no solo la primera captura.';
+ if(last.san.includes('+'))idea+=' Es jaque: el rival está obligado a responder. Antes de dar jaque, valora si ganas tiempo o material, o si simplemente ayudas al rey a escapar.';
+ box.innerHTML='<div class="tag">Explicación jugada '+n+' de '+T.m.length+'</div><h3>'+mover+' · '+last.san+'</h3><p><b>Qué has hecho:</b> '+piece+' ('+kind+') llega a <b>'+target+'</b>.</p><p><b>Por qué puede ser útil:</b> '+idea+'</p><p><b>Qué debes mirar ahora:</b> revisa las amenazas del rival, las piezas sin defensa y las casillas centrales. No des por buena una jugada solo porque ataque algo: calcula la respuesta del contrario.</p><p><b>Mini-reto:</b> señala una pieza rival que ahora esté atacada y comprueba si está defendida. Si no hay ninguna, identifica qué pieza tuya mejoró con esta jugada.</p>';
+}
 function fillAlternatives(){const sel=$('#alt');sel.innerHTML='<option value="">Elige una jugada alternativa…</option>';if(T.branch)return;for(const m of T.c.moves({verbose:true}))sel.add(new Option(m.san+' · '+m.from+' → '+m.to,m.from+' '+m.to+(m.promotion?' '+m.promotion:'')))}
 function line_(){T.lesson=+$('#ln').value;T.m=L[T.lesson][1].split(/\s+/).map(m=>m.replace(/^\d+\./,'')).filter(Boolean);T.i=0;T.branch=false;showLesson();step(0,0)}
-function step(d,abs){if(T.branch){say('Estás explorando una variante. Pulsa «Volver a la línea del curso» para continuar.');return}T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}$('#pn').textContent='Jugada '+T.i+' de '+T.m.length;fillAlternatives();render()}
-async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.c.move({from,to,promotion});T.branch=true;render();say('Has probado '+m.san+'. El motor calcula la mejor respuesta…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best;const reply=T.c.moves({square:x.slice(0,2),verbose:true}).find(y=>y.to===x.slice(2,4));if(reply){T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
+function step(d,abs){if(T.branch){say('Estás explorando una variante. Pulsa «Volver a la línea del curso» para continuar.');return}T.i=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));T.c=new Chess();try{T.m.slice(0,T.i).forEach(m=>T.c.move(m))}catch(e){say('Línea inválida: '+e.message)}$('#pn').textContent='Jugada '+T.i+' de '+T.m.length;fillAlternatives();renderLessonStep();render()}
+async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best;const reply=T.c.moves({square:x.slice(0,2),verbose:true}).find(y=>y.to===x.slice(2,4));if(reply){T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
 function resetLine(){T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
 $('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
