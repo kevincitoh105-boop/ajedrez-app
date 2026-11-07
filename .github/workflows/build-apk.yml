@@ -20,6 +20,8 @@ jobs:
         run: npm install
       - name: Prepare web app
         run: npm run prepare-www
+      - name: Validate PupiloChess lesson lines
+        run: npm run test:lessons
       - name: Include offline Stockfish WASM
         run: node scripts/get-stockfish.js
         env:
