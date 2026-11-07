@@ -5,7 +5,8 @@
   "scripts": {
     "prepare-www": "node scripts/prepare-www.js",
     "stockfish": "node scripts/get-stockfish.js",
-    "test:engine": "node scripts/test-engine.js"
+    "test:engine": "node scripts/test-engine.js",
+    "test:lessons": "node scripts/test-lessons.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
