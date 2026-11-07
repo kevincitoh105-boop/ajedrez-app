@@ -16,11 +16,15 @@ let errors = 0;
 for (const lesson of pupilLessons) {
   const chess = new Chess();
   const moves = String(lesson[1] || '').trim().split(/\s+/).filter(Boolean);
+  let failedMove = '';
   try {
-    for (const san of moves) chess.move(san);
+    for (const san of moves) {
+      failedMove = san;
+      chess.move(san);
+    }
   } catch (error) {
     errors++;
-    console.error('Línea ilegal:', lesson[0], '|', san, '|', error.message);
+    console.error('Línea ilegal:', lesson[0], '|', failedMove, '|', error.message);
   }
 }
 if (errors) process.exit(1);
