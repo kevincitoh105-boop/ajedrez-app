@@ -169,11 +169,11 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
  if(evalBusy)return;
  evalBusy=true;
  try{
-  say('Analizando tu jugada y comparándola con la mejor alternativa…');
+  say('Analizando tu jugada, la mejor alternativa y la amenaza que permite…');
   const best=await ask(before,'depth 14',20);
   const playedEval=await ask(afterFen,'depth 14',20);
   const playedPerspective=-playedEval.score;
-  let bestPerspective=playedPerspective,bestSan='No disponible',bestMove=null;
+  let bestPerspective=playedPerspective,bestSan='No disponible',bestMove=null,bestAfter=null;
   if(best.best&&best.best!=='(none)'){
    const reference=new Chess(before),u=best.best;
    try{
@@ -181,32 +181,58 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
     bestSan=bestMove.san;
     const afterBest=await ask(reference.fen(),'depth 14',20);
     bestPerspective=-afterBest.score;
+    bestAfter=reference.fen();
+   }catch(e){}
+  }
+  const reply=playedEval.best&&playedEval.best!=='(none)'?playedEval.best:null;
+  let replySan='No disponible',replyMove=null,replyFacts=[];
+  if(reply){
+   try{
+    const response=new Chess(afterFen),u=reply;
+    replyMove=response.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});
+    replySan=replyMove.san;
+    if(replyMove.captured)replyFacts.push('captura tu '+pieceName(replyMove.captured)+' en '+replyMove.to);
+    if(replyMove.san.includes('+'))replyFacts.push('da jaque y te obliga a responder');
+    if(replyMove.san.includes('#'))replyFacts.push('es jaque mate');
+    if(replyMove.piece==='n'||replyMove.piece==='b')replyFacts.push('activa una pieza menor con tiempo');
+    if(replyMove.piece==='q')replyFacts.push('crea una amenaza directa con la dama');
    }catch(e){}
   }
   const loss=Math.max(0,Math.round(bestPerspective-playedPerspective));
   const played=new Chess(before),actual=played.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
   const after=new Chess(afterFen),facts=[];
-  if(actual.captured)facts.push('Has capturado '+pieceName(actual.captured)+'. Comprueba si la pieza capturada estaba defendida y qué queda desprotegido después del cambio.');
-  if(actual.san.includes('+'))facts.push('Has dado jaque. Un jaque obliga al rival a responder, pero no siempre es bueno: revisa si ganas algo o solo ayudas a desarrollar sus piezas.');
+  if(actual.captured)facts.push('Capturaste '+pieceName(actual.captured)+'. Comprueba si la pieza capturada estaba defendida y qué queda desprotegido después del cambio.');
+  if(actual.san.includes('+'))facts.push('Diste jaque. Un jaque obliga al rival a responder, pero no siempre mejora tu posición: comprueba si ganas algo o solo ayudas a desarrollar sus piezas.');
   if(actual.san.includes('#'))facts.push('¡Jaque mate! El rey rival no tiene ninguna respuesta legal.');
-  if(actual.flags.includes('k')||actual.flags.includes('q'))facts.push('Has enrocado: apartas al rey del centro y conectas las torres.');
-  if(['e4','d4','e5','d5'].includes(actual.to))facts.push('Esta jugada influye directamente en el centro, que da espacio y casillas de entrada a tus piezas.');
-  if(actual.piece==='n'||actual.piece==='b')facts.push('Al desarrollar una pieza menor, intenta que ataque o controle casillas centrales y que no tenga que moverse varias veces.');
-  if(actual.piece==='q'&&played.history().length<12)facts.push('Sacar la dama temprano puede exponerla a ataques que hacen perder tiempos. Hazlo solo si existe una razón concreta.');
-  if(actual.piece==='p'&&!actual.captured&&!['e4','d4','e5','d5'].includes(actual.to))facts.push('Cada avance de peón deja casillas detrás que ya no podrán ser defendidas por otro peón. Pregúntate qué casillas debilitas.');
+  if(actual.flags.includes('k')||actual.flags.includes('q'))facts.push('Enrocaste: apartas al rey del centro y conectas las torres.');
+  if(['e4','d4','e5','d5'].includes(actual.to))facts.push('Influyes directamente en el centro, que da espacio y casillas de entrada a tus piezas.');
+  if(actual.piece==='n'||actual.piece==='b')facts.push('Desarrollaste una pieza menor. Comprueba si controla casillas centrales y si puede ser expulsada ganando un tiempo.');
+  if(actual.piece==='q'&&played.history().length<12)facts.push('Sacaste la dama temprano; vigila si el rival puede atacarla mientras desarrolla sus piezas.');
+  if(actual.piece==='p'&&!actual.captured&&!['e4','d4','e5','d5'].includes(actual.to))facts.push('Este avance deja casillas detrás que ya no podrán ser defendidas por otro peón. Identifica cuáles quedan débiles.');
   if(after.isCheck())facts.push('Tu rey está en jaque: la prioridad es salir del jaque, no continuar con un plan.');
   const label=loss<=10?'EXCELENTE':loss<=30?'BUENA':loss<=70?'IMPRECISA':loss<=130?'MALA':loss<=250?'MUY MALA':'ERROR GRAVE';
   const color=loss<=30?'#9bd6a5':loss<=70?'#f2d27a':'#ff9999';
-  const how='Para detectarlo tú mismo, antes de mover aplica este orden: 1) ¿Qué jaques tiene el rival? 2) ¿Qué piezas puede capturar? 3) ¿Qué amenaza? 4) ¿Mi pieza quedará defendida? 5) ¿Mi jugada desarrolla, mejora una pieza o crea una amenaza real?';
-  const why=loss<=30?'La evaluación apenas empeora frente a la mejor opción calculada. Aun así, revisa las amenazas del rival en la siguiente jugada.':loss<=70?'La idea puede ser razonable, pero había una continuación más precisa. Compara qué pieza mejora cada opción y qué amenazas permite.':'La alternativa del motor conserva bastante mejor la posición. Busca qué amenaza concreta no atendiste: una pieza atacada, un jaque, una captura o una casilla débil.';
   const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:12px;margin:8px 0;border:1px solid #71858a;border-radius:10px;background:#22343c;line-height:1.5';
   const title=document.createElement('h3');title.style.cssText='margin:0 0 8px;color:'+color;title.textContent='Tu jugada: '+label+' · '+san+' · pérdida estimada '+loss+' cp';box.append(title);
-  const p=document.createElement('p');p.textContent=why;box.append(p);
-  const alt=document.createElement('p');alt.innerHTML='<b>Mejor opción:</b> ';alt.append(document.createTextNode(bestSan+(bestMove?' ('+bestMove.from+' → '+bestMove.to+')':'')+'. '));box.append(alt);
-  const explain=document.createElement('p');explain.innerHTML='<b>¿Por qué era mejor?</b> ';explain.append(document.createTextNode(bestMove?'El motor la prefiere porque, tras calcular las respuestas, deja una evaluación aproximadamente '+Math.max(0,Math.round(bestPerspective-playedPerspective))+' centipeones mejor que tu jugada. Mira qué pieza activa, qué amenaza crea o qué peligro evita.':'No se pudo obtener una variante alternativa fiable en este análisis.'));box.append(explain);
-  const detail=document.createElement('p');detail.innerHTML='<b>Qué ocurre con tu jugada:</b> ';detail.append(document.createTextNode(facts.join(' ')||'No aparece un motivo táctico elemental evidente. Compara la seguridad de las piezas y el plan de ambos bandos.'));box.append(detail);
-  const tip=document.createElement('p');tip.innerHTML='<b>Cómo aprender a reconocerlo:</b> ';tip.append(document.createTextNode(how));box.append(tip);
-  const caveat=document.createElement('small');caveat.textContent='La valoración es una estimación del motor a profundidad limitada, no una verdad absoluta. En posiciones complejas puede cambiar al calcular más.';box.append(caveat);
+  const p=document.createElement('p');p.textContent=loss<=10?'La evaluación apenas cambia: tu jugada mantiene prácticamente la calidad de la mejor opción calculada.':loss<=30?'La jugada es razonable, aunque el motor encuentra una continuación algo más precisa.':loss<=70?'La idea tiene sentido, pero concede una ventaja apreciable. Compara las amenazas que permite con las que crea.':'La posición empeora de forma importante. No te quedes con la etiqueta «mala»: identifica el recurso concreto del rival que no tuviste en cuenta.';box.append(p);
+  const alt=document.createElement('p');alt.innerHTML='<b>Mejor jugada en esta posición:</b> ';alt.append(document.createTextNode(bestSan+(bestMove?' ('+bestMove.from+' → '+bestMove.to+')':'')+'. '));box.append(alt);
+  const explain=document.createElement('p');explain.innerHTML='<b>Qué idea estratégica tenía:</b> ';
+  let strategic='El motor compara todas las continuaciones que alcanza a calcular. Observa qué pieza mejora, qué casilla controla y qué amenaza queda atendida.';
+  if(bestMove){
+   strategic='La mejor opción mueve '+pieceName(bestMove.piece)+' a '+bestMove.to+'. ';
+   if(bestMove.captured)strategic+='Además captura '+pieceName(bestMove.captured)+'. ';
+   if(bestMove.san.includes('+'))strategic+='La jugada incluye jaque, por lo que gana un tiempo forzado. ';
+   if(['e4','d4','e5','d5'].includes(bestMove.to))strategic+='Interviene en el centro y disputa casillas importantes. ';
+   strategic+='Compárala con tu jugada: ¿qué pieza queda más activa, qué debilidad se protege o qué ruptura se prepara? La diferencia de evaluación es una pista, no una explicación estratégica completa por sí sola.';
+  }
+  explain.append(document.createTextNode(strategic));box.append(explain);
+  const threat=document.createElement('p');threat.innerHTML='<b>La amenaza que pasaste por alto:</b> ';
+  threat.append(document.createTextNode(replyMove?'La respuesta más fuerte que encuentra el motor es '+replySan+'. '+(replyFacts.length?'Con ella, el rival '+replyFacts.join(' y ')+'. ':'')+'Reproduce esa respuesta en el tablero y observa qué pieza, casilla o seguridad del rey queda comprometida.': 'El motor no ha devuelto una respuesta legal fiable. Revisa igualmente las piezas atacadas, los jaques y las capturas disponibles.'));
+  box.append(threat);
+  const detail=document.createElement('p');detail.innerHTML='<b>Qué produjo tu jugada:</b> ';detail.append(document.createTextNode(facts.join(' ')||'No aparece un motivo elemental evidente. Compara la seguridad de las piezas, las casillas débiles y la actividad de ambos bandos.'));box.append(detail);
+  const plan=document.createElement('p');plan.innerHTML='<b>Qué plan seguir ahora:</b> ';plan.append(document.createTextNode('Primero neutraliza la amenaza concreta de la respuesta rival. Después mejora tu pieza peor colocada, protege las piezas que hayan quedado vulnerables y prepara una ruptura central o una columna útil. No intentes ejecutar las tres ideas a la vez: elige la que la posición permita y vuelve a evaluar tras la respuesta del contrario.'));box.append(plan);
+  const tip=document.createElement('p');tip.innerHTML='<b>Cómo reconocerlo la próxima vez:</b> ';tip.append(document.createTextNode('Antes de confirmar una jugada, haz una pausa y busca en este orden: 1) jaques del rival; 2) capturas que puede realizar; 3) amenazas directas; 4) piezas propias sin defensa o sobrecargadas; 5) casillas que dejas débiles al mover un peón. Luego compara tu candidata con la mejor alternativa: ¿qué problema resuelve cada una?'));box.append(tip);
+  const caveat=document.createElement('small');caveat.textContent='Análisis orientativo de Stockfish a profundidad limitada. La mejor respuesta indicada es la principal que encontró el motor en ese momento; en posiciones complejas puede cambiar con más cálculo. La explicación estratégica ayuda a interpretar la variante, pero no sustituye reproducirla en el tablero.';box.append(caveat);
   const old=$('#move-review');if(old)old.remove();$('#mv').after(box);
  }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
  finally{evalBusy=false;if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
