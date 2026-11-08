@@ -38,6 +38,7 @@ small,#plan{color:var(--mut)}
 <div id="st"></div>
 <div id="pr" class="row" hidden></div>
 <div id="board"></div>
+<div id="theoryNav" class="row" hidden><button id="p0">⏮ Inicio</button><button id="p1">◀ Anterior</button><button id="p2">Siguiente ▶</button><span id="pn"></span></div>
 <div id="mv"></div>
 <section id="play">
  <div class="row"><label>Tu color <select id="col"><option value="w">Blancas</option><option value="b">Negras</option></select></label><button id="fl">⇅ Girar</button><button id="hn">💡 Pista</button></div>
@@ -48,7 +49,6 @@ small,#plan{color:var(--mut)}
 <section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button><button id="lfl">⇅ Girar</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p></section>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
- <div class="row"><button id="p0">⏮ Inicio</button><button id="p1">◀ Anterior</button><button id="p2">Siguiente ▶</button><span id="pn"></span></div>
  <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div><div id="lessonStep" class="lesson"></div>
  <div class="row"><button id="markDone" class="go">Marcar clase como completada</button></div>
  <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
@@ -231,7 +231,7 @@ const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent=
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=test?'w':$('#col').value;G.lvl=test?6:+$('#lv').value;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel: juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
+function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
 function showLesson(){const l=L[T.lesson];progressText();const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>';renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
