@@ -10,22 +10,43 @@ const source = html.slice(start, end) + '\nglobalThis.__lessons = L;';
 const sandbox = {};
 vm.runInNewContext(source, sandbox);
 const lessons = sandbox.__lessons;
-const pupilLessons = lessons.filter(row => String(row[5] || '').startsWith('PupiloChess ·'));
-if (pupilLessons.length < 10) throw new Error('Se esperaban al menos 10 lecciones PupiloChess; encontradas: ' + pupilLessons.length);
-let errors = 0;
-for (const lesson of pupilLessons) {
+if (lessons.length !== 36) throw new Error('Se esperaban 36 lecciones; encontradas: ' + lessons.length);
+
+function parseMoves(raw) {
+  return String(raw || '').replace(/\{[^}]*\}/g, ' ').replace(/;[^\n]*/g, ' ').replace(/\$\d+/g, ' ')
+    .split(/\s+/).map(token => token.replace(/^\d+\.(?:\.\.)?/, '').replace(/[!?]+$/, ''))
+    .filter(token => token && !/^\d+\.(?:\.\.)?$/.test(token) && !/^\.\.\.$/.test(token)
+      && !/^(1-0|0-1|1\/2-1\/2|\*)$/.test(token) && token !== 'e.p.');
+}
+
+let totalMoves = 0;
+for (const lesson of lessons) {
   const chess = new Chess();
-  const moves = String(lesson[1] || '').trim().split(/\s+/).filter(Boolean);
-  let failedMove = '';
-  try {
-    for (const san of moves) {
-      failedMove = san;
+  const moves = parseMoves(lesson[1]);
+  if (!moves.length) throw new Error('Lección sin jugadas: ' + lesson[0]);
+  for (let i = 0; i < moves.length; i++) {
+    const san = moves[i];
+    try {
+      const before = chess.fen();
       chess.move(san);
+      if (chess.fen() === before) throw new Error('La posición no cambió');
+      totalMoves++;
+    } catch (error) {
+      throw new Error('Línea inválida: ' + lesson[0] + ' | jugada ' + (i + 1) + ' «' + san + '»: ' + error.message);
     }
-  } catch (error) {
-    errors++;
-    console.error('Línea ilegal:', lesson[0], '|', failedMove, '|', error.message);
+  }
+  for (let target = 0; target <= moves.length; target++) {
+    const replay = new Chess();
+    for (const san of moves.slice(0, target)) replay.move(san);
+    if (replay.history().length !== target) throw new Error('Falló la reconstrucción en ' + lesson[0] + ', paso ' + target);
   }
 }
-if (errors) process.exit(1);
-console.log('OK: ' + pupilLessons.length + ' lecciones PupiloChess y todas sus secuencias son legales.');
+
+if (!html.includes("G.me=$('#col').value") || !html.includes("m.color===G.me"))
+  throw new Error('El test de nivel todavía no respeta el color elegido para el análisis.');
+if (!html.includes("className='coord rank'") || !html.includes("className='coord file'"))
+  throw new Error('Faltan las coordenadas del tablero.');
+if (!html.includes("screenRow===7") || !html.includes("screenCol===0"))
+  throw new Error('Las coordenadas no están asociadas a los bordes visibles del tablero.');
+
+console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas.');

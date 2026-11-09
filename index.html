@@ -14,6 +14,7 @@ button.on,button.go{background:var(--ac);color:#1b1b1b;border-color:var(--ac)}
 nav button{flex:1}
 #board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--bd);height:var(--bd);border:2px solid #0d161a;border-radius:4px;overflow:hidden;user-select:none;touch-action:manipulation}
 .sq{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;font:calc(var(--bd)/8*.78)/1 'Noto Sans Symbols 2','Segoe UI Symbol',serif;position:relative}
+.sq .coord{position:absolute;z-index:3;font:700 clamp(9px,calc(var(--bd)/8*.15),12px)/1 Arial,sans-serif;pointer-events:none;text-shadow:none}.sq.l .coord{color:#26352f}.sq.d .coord{color:#f4e8c8}.sq .coord.rank{left:3px;top:2px}.sq .coord.file{right:3px;bottom:2px}
 .l{background:var(--lt)}.d{background:var(--dk)}
 .w{color:#fff;text-shadow:0 0 3px #000,0 0 1px #000}.b{color:#101010}
 .sel{box-shadow:inset 0 0 0 4px var(--ac)}
@@ -147,6 +148,9 @@ function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.boar
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
   d.className='sq '+((r+k)%2?'d':'l')+(mode==='play'&&sq===G.sel?' sel':'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
   if(p){const s=document.createElement('span');s.className=p.color;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
+  const screenRow=i>>3,screenCol=i&7;
+  if(screenCol===0){const label=document.createElement('small');label.className='coord rank';label.textContent=sq[1];d.append(label)}
+  if(screenRow===7){const label=document.createElement('small');label.className='coord file';label.textContent=sq[0];d.append(label)}
   d.onclick=()=>tap(sq);b.append(d)}
  const sans=c.history(),mt=[];for(let i=0;i<sans.length;i+=2)mt.push((i/2+1)+'. '+sans[i]+(sans[i+1]?' '+sans[i+1]:''));
  let w=0;for(const r of bd)for(const p of r)if(p)w+=(p.color==='w'?1:-1)*V[p.type];
@@ -243,9 +247,9 @@ async function engineTurn(){G.busy=true;say('Piensa el rival…');const r=await 
  G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});G.busy=false;vib();render();const o=overText();o?finish(o):say(turnText())}
 function finish(t){G.over=true;say(t);if(G.test)analyze()}
 async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Motor: '+engName+(engErr?' · '+engErr:'')));
- const h=G.g.history({verbose:true}),n=h.filter(m=>m.color==='w').length;if(n<12)return say('Muestra insuficiente: juega al menos 12 jugadas con blancas y repite el test.');
+ const h=G.g.history({verbose:true}),n=h.filter(m=>m.color===G.me).length;if(n<12)return say('Muestra insuficiente: juega al menos 12 jugadas con '+(G.me==='b'?'negras':'blancas')+' y repite el test.');
  G.busy=true;const c=new Chess();let tot=0,k=0;
- for(const m of h){if(m.color==='w'){say('Analizando tus jugadas '+(k+1)+'/'+n+'…');const s1=(await ask(c.fen(),'depth 8',20)).score;c.move(m.san);
+ for(const m of h){if(m.color===G.me){say('Analizando tus jugadas '+(k+1)+'/'+n+' con '+(G.me==='b'?'negras':'blancas')+'…');const s1=(await ask(c.fen(),'depth 8',20)).score;c.move(m.san);
   const s2=c.isCheckmate()?1000:c.isDraw()?0:-(await ask(c.fen(),'depth 8',20)).score;tot+=Math.min(500,Math.max(0,s1-s2));k++}else c.move(m.san)}
  G.busy=false;const acpl=tot/k;const band=acpl<20?'1900–2200':acpl<35?'1700–2000':acpl<50?'1500–1800':acpl<70?'1300–1600':acpl<95?'1000–1400':acpl<130?'800–1200':'menor de 1100';
  const games=JSON.parse(localStorage.eloGames||'[]');games.push({date:Date.now(),acpl:Math.round(acpl),moves:k});localStorage.eloGames=JSON.stringify(games.slice(-10));
@@ -255,8 +259,8 @@ async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Moto
  say('Pérdida media: '+Math.round(acpl)+' cp por jugada. Banda orientativa: '+band+' Elo. '+(stable?'Basada en las últimas 5 pruebas.':'Aún provisional: hacen falta 5 pruebas para suavizar la variación.')+' No es Elo FIDE ni rating oficial.');eloTxt()}
 const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent='Rival nivel '+v+' · ≈ Elo '+(1100+v*95)};
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
-function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=test?'w':$('#col').value;G.lvl=test?6:+$('#lv').value;
- $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel: juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
+function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=$('#col').value;G.lvl=test?6:+$('#lv').value;
+ $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel con '+(G.me==='b'?'negras':'blancas')+': juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
 function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
