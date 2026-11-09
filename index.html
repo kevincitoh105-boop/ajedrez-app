@@ -47,7 +47,7 @@ small,#plan{color:var(--mut)}
  <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button></div>
  <small id="elo"></small><br><small id="eng"></small>
 </section>
-<section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button><button id="lfl">⇅ Girar</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p></section>
+<section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p></section>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
  <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div><div id="lessonStep" class="lesson"></div>
@@ -111,7 +111,7 @@ L.push(
 );
 
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
-let evalBusy=false,localFlip=false;
+let evalBusy=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
 const T={c:new Chess(),m:[],i:0,branch:false,lesson:0};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
@@ -141,7 +141,7 @@ async function ask(fen,go,lvl){await EP;
 /* ---------- UI ---------- */
 const say=t=>$('#st').textContent=t;
 const flipped=()=>(G.me==='b')!==G.flip;
-const view=()=>mode==='theory'?{c:T.c,f:theoryBlackPerspective()}:{c:G.g,f:mode==='local'?localFlip:flipped()};
+const view=()=>mode==='theory'?{c:T.c,f:theoryBlackPerspective()}:{c:G.g,f:mode==='local'?G.g.turn()==='b':flipped()};
 function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
  const tg=(mode==='play'||mode==='local')&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
@@ -386,8 +386,8 @@ async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return
 function resetLine(){T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
 $('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
-$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;localFlip=false;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
-$('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;localFlip=false;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};$('#lfl').onclick=()=>{localFlip=!localFlip;render()};
+$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
+$('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
 $('#fl').onclick=()=>{G.flip=!G.flip;render()};
 $('#hn').onclick=async()=>{if(G.busy||G.over||G.test||G.g.turn()!==G.me)return;G.busy=true;say('Buscando una pista…');const r=await ask(G.g.fen(),'movetime 800',20);G.busy=false;
