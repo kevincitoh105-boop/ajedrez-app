@@ -57,4 +57,22 @@ if (localGame.turn() !== 'b') throw new Error('Tras la jugada blanca, debe queda
 localGame.move('e5');
 if (localGame.turn() !== 'w') throw new Error('Tras la jugada negra, debe volver el turno blanco.');
 
-console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas; orientación local alternada validada con ambos turnos.');
+const requiredFeatures = [
+  ['animación de piezas', 'async function animatePieceMoves'],
+  ['animación del motor', 'await animatePieceMoves(animationForMove(candidate,G.g.turn()))'],
+  ['repetición espaciada', 'localStorage.chessMistakeBank'],
+  ['entrenador de errores', 'function startTraining()'],
+  ['revisión completa de partida', 'async function reviewGame()'],
+  ['pestaña Entrenar', "$('#t4').onclick"],
+  ['navegación de teoría animada', 'async function step(d,abs)']
+];
+for (const [name, marker] of requiredFeatures) {
+  if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
+}
+const moduleStart = html.indexOf('<script type="module">');
+const moduleEnd = html.indexOf('</script>', moduleStart);
+if (moduleStart < 0 || moduleEnd < 0) throw new Error('No se encontró el módulo JavaScript principal.');
+const inline = html.slice(moduleStart + '<script type="module">'.length, moduleEnd)
+  .replace(/^\\s*import\\s+\\{\\s*Chess\\s*\\}\\s+from\\s+['"][^'"]+['"];?\\s*/, '');
+new vm.Script(inline, { filename: 'index-inline.js' });
+console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas; orientación local alternada; animaciones; entrenador espaciado; revisión de partidas; sintaxis JavaScript validada.');
