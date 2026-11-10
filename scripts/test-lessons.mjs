@@ -76,7 +76,7 @@ const requiredFeatures = [
   ['pistas calculadas para la posición actual', 'async function guidedHint()'],
   ['duración de clase basada en las jugadas reales del repertorio', 'for(const san of T.m){try{const played=countLine.move(san);if(played&&played.color===T.humanSide)T.guidedLimit++}catch(e){T.guidedLineActive=false;break}}'],
   ['el rival sigue la línea propia de cada lección', 'const scripted=new Chess(T.c.fen());try{const expected=scripted.move(T.m[T.guidedLineIndex])'],
-  ['las desviaciones activan respuestas dinámicas de Stockfish', "if(!response){const fen=T.c.fen(),result=await ask(fen,'depth 10',14)"],
+  ['las desviaciones activan respuestas dinámicas de Stockfish', "if(!response){const fen=T.c.fen(),result=await ask(fen,'depth 10',adaptiveEngineLevel(lessonStats()))"],
   ['se valida la jugada objetivo de cada alumno', 'if(expected&&expected.color===T.humanSide)expectedSan=expected.san'],
   ['conserva la explicación después de la respuesta rival', 'prior=T.pendingCoach;T.pendingCoach=null;'],
   ['restaura la pieza original al terminar la animación', "x.piece.style.visibility=''"],
@@ -98,7 +98,15 @@ const requiredFeatures = [
   ['entrenamiento alternativo desde las lecciones', 'function courseTrainingPositions()'],
   ['pista de entrenamiento calculada por Stockfish', "ask(G.g.fen(),'depth 12',20)"],
   ['evaluación colocada debajo de los controles', "(mode==='local'?$('#local'):$('#play')).after(box)"],
-  ['la pieza se restaura si falla o termina la animación', "x.piece.style.visibility=''"]
+  ['la pieza se restaura si falla o termina la animación', "x.piece.style.visibility=''"],
+  ['permite reconsiderar una mala jugada y volver a intentarla', "T.c.load(before);T.arrow={from:bestMove.from,to:bestMove.to,kind:'wrong'}"],
+  ['registra intentos y progreso por lección', 'localStorage.chessLessonStats'],
+  ['explica el objetivo estratégico de cada clase', "'Objetivo de esta clase: '+L[T.lesson][2]"],
+  ['hace preguntas para comprobar la comprensión', 'function showLessonQuiz()'],
+  ['no deja saltarse la pregunta de comprensión', 'if(T.animating||T.quizPending)return'],
+  ['ajusta el umbral de evaluación según el dominio', 'function adaptiveThreshold(stats)'],
+  ['adapta la fuerza del rival según el progreso', 'function adaptiveEngineLevel(stats)'],
+  ['muestra el cuestionario en el panel del entrenador', 'id="coachQuiz" class="coach-quiz"']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
