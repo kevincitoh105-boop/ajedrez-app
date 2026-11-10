@@ -2,6 +2,8 @@ const fs = require('fs'), path = require('path');
 const out = 'www';
 fs.rmSync(out, { recursive: true, force: true });
 for (const d of ['lib', 'engine']) fs.mkdirSync(path.join(out, d), { recursive: true });
+fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
+if (fs.existsSync('assets/coach.webp')) fs.copyFileSync('assets/coach.webp', path.join(out, 'assets/coach.webp'));
 fs.copyFileSync('index.html', path.join(out, 'index.html'));
 
 const walk = d => !fs.existsSync(d) ? [] : fs.readdirSync(d, { withFileTypes: true }).flatMap(e =>

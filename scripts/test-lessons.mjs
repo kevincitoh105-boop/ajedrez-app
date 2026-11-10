@@ -64,7 +64,12 @@ const requiredFeatures = [
   ['entrenador de errores', 'function startTraining()'],
   ['revisión completa de partida', 'async function reviewGame()'],
   ['pestaña Entrenar', "$('#t4').onclick"],
-  ['navegación de teoría animada', 'async function step(d,abs)']
+  ['navegación de teoría animada', 'async function step(d,abs)'],
+  ['clase interactiva guiada', 'async function lessonMove(m)'],
+  ['respuesta automática del rival', 'async function runGuidedReplies()'],
+  ['pistas con flechas', 'function guidedHint()'],
+  ['avatar del entrenador', 'assets/coach.webp'],
+  ['selección de color en lecciones', 'id="lessonSide"']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
