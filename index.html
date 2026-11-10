@@ -555,7 +555,15 @@ async function reviewGame(){if(G.busy)return;const history=G.g.history({verbose:
 $('#reviewGame').onclick=reviewGame;$('#reviewLocal').onclick=reviewGame;
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
 $('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;
-$('#guidedStart').onclick=()=>{if(mode!=='theory'){mode='theory';tabs()}guidedStart()};$('#guidedHint').onclick=guidedHint;$('#guidedRetry').onclick=()=>guidedStart();$('#guidedNext').onclick=guidedNext;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
+function openGuidedLesson(restart=false){
+ if(mode!=='theory'){mode='theory';tabs();line_()}
+ if(restart){T.guided=false;T.animating=false}
+ guidedStart();
+}
+$('#guidedStart').onclick=()=>openGuidedLesson(false);
+$('#guidedRetry').onclick=()=>openGuidedLesson(true);
+$('#guidedHint').onclick=()=>{if(mode!=='theory'){openGuidedLesson(false);return}guidedHint()};
+$('#guidedNext').onclick=()=>{if(mode!=='theory'){openGuidedLesson(false);return}guidedNext()};$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
 $('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};$('#t4').onclick=()=>{mode='train';tabs();startTraining()};
 $('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
