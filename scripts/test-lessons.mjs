@@ -77,6 +77,8 @@ const requiredFeatures = [
   ['seis decisiones interactivas por clase', 'guidedLimit=6'],
   ['conserva la explicación después de la respuesta rival', 'prior=T.pendingCoach;T.pendingCoach=null;'],
   ['restaura la pieza original al terminar la animación', "x.piece.style.visibility=''"],
+  ['protege contra animaciones atascadas en Android WebView', 'new Promise(resolve=>{timer=setTimeout(resolve,450)})'],
+  ['muestra la jugada antes de analizarla', "coachMessage('Estoy estudiando tu jugada…'"],
   ['abre la pestaña de teoría al iniciar una clase desde el entrenador', 'function openGuidedLesson(restart=false)'],
   ['conecta comenzar clase interactiva', "$('#guidedStart').onclick=()=>openGuidedLesson(false)"],
   ['conecta reiniciar clase', "$('#guidedRetry').onclick=()=>openGuidedLesson(true)"],
