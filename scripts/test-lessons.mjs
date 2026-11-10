@@ -76,7 +76,16 @@ const requiredFeatures = [
   ['pistas calculadas para la posición actual', 'async function guidedHint()'],
   ['seis decisiones interactivas por clase', 'guidedLimit=6'],
   ['conserva la explicación después de la respuesta rival', 'prior=T.pendingCoach;T.pendingCoach=null;'],
-  ['guarda el diagnóstico de la jugada del alumno', 'T.pendingCoach={title,message,status}']
+  ['guarda el diagnóstico de la jugada del alumno', 'T.pendingCoach={title,message,status}'],
+  ['panel del entrenador situado antes del tablero', 'id="coachPanel" class="coach-panel" hidden>'],
+  ['botón de iniciar clase conectado', "$('#guidedStart').onclick"],
+  ['botón de pista conectado', "$('#guidedHint').onclick=guidedHint"],
+  ['reinicio de clase conectado', "$('#guidedRetry').onclick"],
+  ['siguiente clase conectado', "$('#guidedNext').onclick=guidedNext"],
+  ['entrenamiento alternativo desde las lecciones', 'function courseTrainingPositions()'],
+  ['pista de entrenamiento calculada por Stockfish', "ask(G.g.fen(),'depth 12',20)"],
+  ['evaluación colocada debajo de los controles', "(mode==='local'?$('#local'):$('#play')).after(box)"],
+  ['animación no devuelve la pieza a su casilla anterior', "x.piece.style.visibility='hidden'"]
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
