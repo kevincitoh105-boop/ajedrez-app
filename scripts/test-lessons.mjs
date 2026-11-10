@@ -48,8 +48,8 @@ if (!html.includes("className='coord rank'") || !html.includes("className='coord
   throw new Error('Faltan las coordenadas del tablero.');
 if (!html.includes("screenRow===7") || !html.includes("screenCol===0"))
   throw new Error('Las coordenadas no están asociadas a los bordes visibles del tablero.');
-if (!html.includes("f:mode==='local'?G.g.turn()==='b':flipped()"))
-  throw new Error('La partida local no gira automáticamente hacia el jugador que tiene el turno.');
+if (!html.includes("f:mode==='local'?G.g.turn()==='b':mode==='train'?G.trainSide==='b':flipped()"))
+  throw new Error('La orientación del tablero no respeta el turno local ni el color del ejercicio.');
 const localGame = new Chess();
 if (localGame.turn() !== 'w') throw new Error('La partida local debe empezar con blancas abajo.');
 localGame.move('e4');
