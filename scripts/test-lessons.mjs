@@ -73,6 +73,6 @@ const moduleStart = html.indexOf('<script type="module">');
 const moduleEnd = html.indexOf('</script>', moduleStart);
 if (moduleStart < 0 || moduleEnd < 0) throw new Error('No se encontró el módulo JavaScript principal.');
 const inline = html.slice(moduleStart + '<script type="module">'.length, moduleEnd)
-  .replace(/^\\s*import\\s+\\{\\s*Chess\\s*\\}\\s+from\\s+['"][^'"]+['"];?\\s*/, '');
+  .replace(/^\s*import\s+\{\s*Chess\s*\}\s+from\s+['"][^'"]+['"];?\s*/, '');
 new vm.Script(inline, { filename: 'index-inline.js' });
 console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas; orientación local alternada; animaciones; entrenador espaciado; revisión de partidas; sintaxis JavaScript validada.');
