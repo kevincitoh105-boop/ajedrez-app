@@ -512,7 +512,7 @@ async function lessonMove(m){
 }
 async function guidedHint(){
  if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver())return;T.animating=true;
- try{const result=await ask(T.c.fen(),'depth 12',16),u=result.best,best=u&&u!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===u.slice(0,2)&&x.to===u.slice(2,4)&&(!u[4]||x.promotion===u[4])):null;
+ try{let best=null;if(T.guidedLineActive&&T.guidedLineIndex<T.m.length){const probe=new Chess(T.c.fen());try{const expected=probe.move(T.m[T.guidedLineIndex]);if(expected&&expected.color===T.humanSide)best=T.c.moves({verbose:true}).find(x=>x.from===expected.from&&x.to===expected.to&&x.promotion===expected.promotion)}catch(e){T.guidedLineActive=false}}if(!best){const result=await ask(T.c.fen(),'depth 12',16),u=result.best;best=u&&u!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===u.slice(0,2)&&x.to===u.slice(2,4)&&(!u[4]||x.promotion===u[4])):null}
   if(!best){coachMessage('Sin pista disponible','No se encontró una jugada fiable en esta posición. Busca primero jaques, capturas y amenazas.','La partida sigue intacta.');return}
   T.arrow={from:best.from,to:best.to,kind:'hint'};T.sel=null;render();coachMessage('Pista del entrenador','Stockfish recomienda '+best.san+' ('+best.from+' → '+best.to+'). '+L[T.lesson][3]+' Comprueba qué amenaza resuelve o qué ventaja crea antes de mover.','Pista · La decisión final sigue siendo tuya');
  }finally{T.animating=false}
