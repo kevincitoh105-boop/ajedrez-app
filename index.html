@@ -40,7 +40,7 @@ small,#plan{color:var(--mut)}
 .coach-panel{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;background:#f0dfc2;color:#342719;border:2px solid #b89b72;border-radius:12px;padding:10px;margin:8px 0;font-family:Georgia,serif}
 .coach-avatar{width:92px;height:118px;object-fit:cover;object-position:center 22%;border:2px solid #b89b72;border-radius:8px;background:#fff}
 .coach-copy h3{margin:0 0 5px;color:#563d2b;font-size:17px}.coach-copy p{margin:4px 0;font-size:14px;line-height:1.35}
-.coach-tools{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;align-items:center}.coach-tools button,.coach-tools select{font-size:14px;padding:8px 10px}#coachPanel[data-mode="train"] .coach-tools{display:none}
+.coach-tools{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;align-items:center}.coach-tools button,.coach-tools select{font-size:14px;padding:8px 10px}#coachPanel[data-mode="train"] .coach-tools{display:flex;grid-column:1/-1}#coachPanel[data-mode="train"] .coach-tools>#trainActions{display:flex;width:100%;margin:0}#coachPanel[data-mode="train"] .coach-tools>label,#coachPanel[data-mode="train"] .coach-tools>#guidedStart,#coachPanel[data-mode="train"] .coach-tools>#guidedHint,#coachPanel[data-mode="train"] .coach-tools>#guidedRetry,#coachPanel[data-mode="train"] .coach-tools>#guidedNext{display:none}
 #coachMessage{min-height:58px}.coach-tag{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#775a3d}
 .coach-arrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
 .coach-target{box-shadow:inset 0 0 0 3px #299c58}.coach-wrong{box-shadow:inset 0 0 0 3px #d94b4b}
@@ -59,7 +59,7 @@ small,#plan{color:var(--mut)}
 <section id="play">
  <div class="row"><label>Tu color <select id="col"><option value="w">Blancas</option><option value="b">Negras</option></select></label><button id="fl">⇅ Girar</button><button id="hn">💡 Pista</button></div>
  <div class="row"><input type="range" id="lv" min="0" max="20"><span id="lvt"></span></div>
- <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button><button id="reviewGame">Analizar partida</button></div>
+ <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button><button id="reviewGame">Analizar partida</button></div><p id="analysisStatus" class="coach-note" hidden></p>
  <small id="elo"></small><br><small id="eng"></small>
 </section>
 <section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p><button id="reviewLocal">Analizar esta partida</button></section>
@@ -75,7 +75,7 @@ small,#plan{color:var(--mut)}
 </section>
 <section id="train" hidden>
  <div id="trainSummary" class="lesson"></div>
- <div class="row"><button id="trainStart" class="go">Comenzar entrenamiento</button><button id="trainHint">💡 Pista</button><button id="trainReveal">Ver solución</button><button id="trainNext">Siguiente</button></div>
+ <div class="row" id="trainActions"><button id="trainStart" class="go">Comenzar entrenamiento</button><button id="trainHint">💡 Pista</button><button id="trainReveal">Ver solución</button><button id="trainNext">Siguiente</button></div>
  <div id="trainFeedback" class="lesson">Aquí aparecerán tus errores guardados y los ejercicios pendientes.</div>
  <p id="trainRules" class="coach-note">Si aún no tienes errores guardados, puedes practicar posiciones del curso. Los errores de tus partidas se guardan en este dispositivo y vuelven a aparecer con repasos espaciados. No hay cuentas ni suscripciones.</p>
 </section>
@@ -193,7 +193,7 @@ async function animatePieceMoves(moves){
   const a=piece.getBoundingClientRect(),b=to.getBoundingClientRect(),ghost=piece.cloneNode(true);ghost.classList.add('piece-flight');ghost.style.left=a.left+'px';ghost.style.top=a.top+'px';ghost.style.width=a.width+'px';ghost.style.height=a.height+'px';ghost.style.fontSize=getComputedStyle(piece).fontSize;ghost.style.fontFamily=getComputedStyle(piece).fontFamily;ghost.style.lineHeight='1';document.body.append(ghost);piece.style.visibility='hidden';
   flights.push({ghost,piece,animation:ghost.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(b.left-a.left)+'px,'+(b.top-a.top)+'px)'}],{duration:210,easing:'cubic-bezier(.2,.75,.25,1)'})});
  }
- try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();/* La pieza original permanece oculta hasta que el movimiento se confirma y render() reconstruye el tablero. Así no parece regresar a su casilla de origen. */x.piece.style.visibility='hidden'}}
+ try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();/* Restaurar siempre el nodo original: el render posterior coloca la pieza en su nueva casilla; si una operación falla, nunca queda invisible ni parece desaparecer. */x.piece.style.visibility=''}}
 }
 function animationForMove(m,color){const moves=[{from:m.from,to:m.to}];if(m.flags&&m.flags.includes('k'))moves.push({from:color==='w'?'h1':'h8',to:color==='w'?'f1':'f8'});if(m.flags&&m.flags.includes('q'))moves.push({from:color==='w'?'a1':'a8',to:color==='w'?'d1':'d8'});return moves}
 async function move(m){if(G.busy||G.over)return;const mover=G.g.turn(),candidate=G.g.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
@@ -204,7 +204,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
  if(evalBusy)return;
  evalBusy=true;
  try{
-  say('Analizando tu jugada, la mejor alternativa y la amenaza que permite…');
+  $('#analysisStatus').hidden=false;$('#analysisStatus').textContent='Evaluando tu jugada: calculando la mejor alternativa y las amenazas…';
   const best=await ask(before,'depth 14',20);
   const playedEval=await ask(afterFen,'depth 14',20);
   const playedPerspective=-playedEval.score;
@@ -270,9 +270,9 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   const tip=document.createElement('p');tip.innerHTML='<b>Cómo reconocerlo la próxima vez:</b> ';tip.append(document.createTextNode('Antes de confirmar una jugada, haz una pausa y busca en este orden: 1) jaques del rival; 2) capturas que puede realizar; 3) amenazas directas; 4) piezas propias sin defensa o sobrecargadas; 5) casillas que dejas débiles al mover un peón. Luego compara tu candidata con la mejor alternativa: ¿qué problema resuelve cada una?'));box.append(tip);
   if(saved){const savedNote=document.createElement('p');savedNote.className='coach-note';savedNote.textContent='Este error se guardó automáticamente en Entrenar errores. Volverá a aparecer para que practiques la mejor respuesta.';box.append(savedNote)}
   const caveat=document.createElement('small');caveat.textContent='Análisis orientativo de Stockfish a profundidad limitada. La mejor respuesta indicada es la principal que encontró el motor en ese momento; en posiciones complejas puede cambiar con más cálculo. La explicación estratégica ayuda a interpretar la variante, pero no sustituye reproducirla en el tablero.';box.append(caveat);
-  const old=$('#move-review');if(old)old.remove();(mode==='local'?$('#local'):$('#play')).after(box);
+  const old=$('#move-review');if(old)old.remove();(mode==='local'?$('#local'):$('#play')).after(box);$('#analysisStatus').hidden=true;$('#analysisStatus').textContent='';
  }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
- finally{evalBusy=false;if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
+ finally{evalBusy=false;$('#analysisStatus').hidden=true;$('#analysisStatus').textContent='';if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
 }
 function pieceName(p){return ({p:'peón',n:'caballo',b:'alfil',r:'torre',q:'dama',k:'rey'})[p]||'pieza'}
 async function after(){const o=overText();if(o)return finish(o);if(mode==='local'){say((G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.');return}say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
@@ -296,7 +296,7 @@ const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent=
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=$('#col').value;G.lvl=test?6:+$('#lv').value;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel con '+(G.me==='b'?'negras':'blancas')+': juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train';$('#coachPanel').dataset.mode=mode;$('#reviewResults').hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';
+function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train';$('#coachPanel').dataset.mode=mode;const actions=$('#trainActions'),tools=$('#coachPanel .coach-tools');if(actions&&tools){if(mode==='train')tools.append(actions);else $('#train').append(actions)}$('#reviewResults').hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
 function showLesson(){const l=L[T.lesson];progressText();const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>'+phaseGuide(l);renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
