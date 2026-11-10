@@ -135,7 +135,7 @@ L.push(
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
 let evalBusy=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
-const T={c:new Chess(),m:[],i:0,branch:false,lesson:0,animating:false,guided:false,humanSide:'w',sel:null,arrow:null,attempts:0,pm:null};
+const T={c:new Chess(),m:[],i:0,branch:false,lesson:0,animating:false,guided:false,humanSide:'w',sel:null,arrow:null,attempts:0,pm:null,guidedCount:0,guidedLimit:6};
 const R={items:[],index:0,current:null,revealed:false};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
 const CAND=['stockfish-nnue-16-single.js','stockfish.js','stockfish-nnue-16-asm.js'];
@@ -430,73 +430,69 @@ function drawLessonArrow(){
  const line=document.createElementNS(svg.namespaceURI,'line');line.setAttribute('x1',x1);line.setAttribute('y1',y1);line.setAttribute('x2',x2);line.setAttribute('y2',y2);line.setAttribute('stroke',T.arrow.kind==='wrong'?'#dc4545':'#299c58');line.setAttribute('stroke-width','17');line.setAttribute('stroke-linecap','round');line.setAttribute('marker-end','url(#coachArrowHead)');line.setAttribute('opacity','.9');svg.append(line);board.append(svg);
 }
 function guidedStart(){
- if(T.animating)return;T.guided=true;T.humanSide=$('#lessonSide').value;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;T.i=0;T.branch=false;T.c=new Chess();T.m=parseTheoryMoves(L[T.lesson][1]);$('#pr').hidden=true;$('#theoryNav').hidden=true;render();
- coachMessage('Vamos a trabajar: '+L[T.lesson][0],L[T.lesson][2]+' Primero observa el centro y las piezas desarrolladas. Cuando llegue tu turno, mueve en el tablero. No tienes que memorizar la notación.','Juegas con '+(T.humanSide==='w'?'blancas':'negras')+' · Lección '+(T.lesson+1)+'/'+L.length);
+ if(T.animating)return;T.guided=true;T.humanSide=$('#lessonSide').value;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;T.i=0;T.guidedCount=0;T.guidedLimit=6;T.branch=false;T.c=new Chess();T.m=parseTheoryMoves(L[T.lesson][1]);
+ $('#pr').hidden=true;$('#theoryNav').hidden=true;render();
+ coachMessage('Vamos a aprender jugando: '+L[T.lesson][0],L[T.lesson][2]+' Tú decides las jugadas. Después de cada movimiento analizaré la posición, te explicaré sus consecuencias y el rival responderá con Stockfish. No tienes que repetir una secuencia memorizada.','Juegas con '+(T.humanSide==='w'?'blancas':'negras')+' · 6 decisiones · Entrenador activo');
  runGuidedReplies();
 }
 async function runGuidedReplies(){
  if(!T.guided||T.animating)return;T.animating=true;
- try{
-  while(T.i<T.m.length&&T.c.turn()!==T.humanSide){
-   const probe=new Chess(T.c.fen()),expected=probe.move(T.m[T.i]);if(!expected){coachMessage('Pausa de seguridad','La línea de esta lección contiene una jugada que no se pudo reproducir. El tablero se mantiene en la última posición válida.','No se modificó la partida.');return}
-   await animatePieceMoves(animationForMove(expected,expected.color));T.c.move(T.m[T.i]);T.i++;T.sel=null;render();
-  }
- }catch(e){coachMessage('No se pudo continuar',e.message,'La posición actual se conserva.')}
+ try{while(T.guided&&T.c.turn()!==T.humanSide&&!T.c.isGameOver()){
+  const fen=T.c.fen(),result=await ask(fen,'depth 10',14);
+  let response=result.best&&result.best!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===result.best.slice(0,2)&&x.to===result.best.slice(2,4)&&(!result.best[4]||x.promotion===result.best[4])):null;
+  if(!response)response=T.c.moves({verbose:true})[0]||null;if(!response)break;
+  await animatePieceMoves(animationForMove(response,response.color));T.c.move({from:response.from,to:response.to,promotion:response.promotion});render();
+ }}catch(e){coachMessage('Pausa del entrenador','No se pudo calcular la respuesta del rival: '+e.message+'. La posición actual se conserva.','Puedes continuar o reiniciar la clase.')}
  finally{T.animating=false}
- if(!T.guided)return;
- if(T.i>=T.m.length){finishGuided();return}
- const probe=new Chess(T.c.fen()),expected=probe.move(T.m[T.i]);
- if(!expected){coachMessage('Línea detenida','No se pudo interpretar la siguiente jugada. Puedes reiniciar la clase sin perder el resto de la aplicación.','Posición válida conservada.');return}
- const pName=pieceName(expected.piece),theme=L[T.lesson][2];
- let instruction='Mejora la colocación de esta pieza y mantén la coordinación con el resto. Antes de mover, comprueba qué amenaza tu rival.';
- if(expected.piece==='p')instruction='Piensa qué casilla central o qué estructura de peones necesitas controlar. Los peones no retroceden: comprueba qué casillas dejarás débiles.';
- if(expected.piece==='n')instruction='Busca una casilla activa para tu caballo, preferiblemente cerca del centro y que no pueda ser expulsado fácilmente.';
- if(expected.piece==='b')instruction='Busca una diagonal útil para tu alfil. Comprueba si tus propios peones bloquean su recorrido.';
- if(expected.piece==='q')instruction='Antes de mover la dama, comprueba si el rival puede atacarla ganando un tiempo y si el cambio favorece tu estructura.';
- if(expected.piece==='r')instruction='Busca una columna abierta o semiabierta donde la torre pueda participar en el juego.';
- if(expected.san.includes('+'))instruction='Hay una posibilidad de jaque. Comprueba si es seguro y si la continuación crea una amenaza real.';
- coachMessage('Tu turno: '+(expected.color==='w'?'blancas':'negras'),theme+' '+instruction,'Jugada '+(T.i+1)+' de '+T.m.length+' · Toca una pieza y luego su casilla de destino');
+ if(!T.guided)return;if(T.c.isGameOver()||T.guidedCount>=T.guidedLimit){finishGuided();return}
+ const moves=T.c.moves({verbose:true}),checks=moves.filter(x=>x.san.includes('+')).length,captures=moves.filter(x=>x.captured).length;
+ coachMessage('Tu turno: '+(T.humanSide==='w'?'blancas':'negras'),L[T.lesson][2]+' Mira primero los jaques ('+checks+'), las capturas ('+captures+') y las amenazas. Elige una jugada y te explicaré qué consigue y qué permite.','Entrenamiento en directo · '+T.guidedCount+' de '+T.guidedLimit+' decisiones tuyas');
 }
 function lessonTap(sq){
- if(!T.guided||T.animating||T.i>=T.m.length||T.c.turn()!==T.humanSide)return;
+ if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver()||T.c.turn()!==T.humanSide)return;
  if(T.sel){const candidates=T.c.moves({square:T.sel,verbose:true}).filter(x=>x.to===sq);if(candidates.length){if(candidates[0].promotion){T.pm={from:T.sel,to:sq};promo();return}lessonMove({from:T.sel,to:sq});return}}
  const p=T.c.get(sq);T.sel=p&&p.color===T.humanSide?sq:null;render();
 }
 async function lessonMove(m){
- if(!T.guided||T.animating||T.i>=T.m.length)return;
- const candidate=T.c.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
- const probe=new Chess(T.c.fen()),expected=probe.move(T.m[T.i]);if(!expected){coachMessage('Línea no disponible','La jugada objetivo no es legal en esta posición. Reinicia la lección para volver a la última posición inicial.','No se aplicó ninguna jugada.');return}
- const matches=candidate.from===expected.from&&candidate.to===expected.to&&(candidate.promotion||'')===(expected.promotion||'');
- if(!matches){
-  T.attempts++;T.sel=null;T.arrow={from:candidate.from,to:candidate.to,kind:'wrong'};render();
-  const why=T.attempts===1?'Esa jugada es legal, pero no sigue el plan que estamos estudiando. Mira qué pieza queda menos activa y qué casilla central necesita atención.':'Vas encontrando posibilidades. Antes de confirmar, compara tu candidata con la idea principal: desarrollo, control del centro y seguridad del rey.';
-  coachMessage('Vamos a pensarlo juntos',why+(T.attempts>=2?' Pulsa Pista si quieres que marque el recorrido recomendado.':' Puedes probar otra jugada sin penalización.'),'Intento '+T.attempts+' · No se ha alterado la posición');
-  say('El entrenador está esperando otra jugada. La posición no cambió.');return;
- }
+ if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver())return;
+ const before=T.c.fen(),candidate=T.c.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
  T.animating=true;T.sel=null;T.arrow=null;
- try{await animatePieceMoves(animationForMove(candidate,candidate.color));T.c.move({from:m.from,to:m.to,promotion:m.promotion});T.i++;render();coachMessage('¡Bien visto! '+candidate.san,'Has encontrado la jugada de esta línea. '+L[T.lesson][3]+' Ahora observa la respuesta del rival y piensa qué cambió en la posición.','Correcto · Jugada '+T.i+' de '+T.m.length);await new Promise(r=>setTimeout(r,250))}
- catch(e){coachMessage('No se pudo completar el movimiento',e.message,'La posición anterior permanece disponible.')}
+ try{
+  const best=await ask(before,'depth 10',14);let bestMove=null,bestSan='No disponible';
+  if(best.best&&best.best!=='(none)'){const probe=new Chess(before);try{bestMove=probe.move({from:best.best.slice(0,2),to:best.best.slice(2,4),promotion:best.best[4]});if(bestMove)bestSan=bestMove.san}catch(e){}}
+  await animatePieceMoves(animationForMove(candidate,candidate.color));const actual=T.c.move({from:m.from,to:m.to,promotion:m.promotion});T.guidedCount++;render();
+  if(T.c.isGameOver()){finishGuided();coachMessage('La partida ha terminado',actual.san.includes('#')?'¡Has encontrado jaque mate!':'La posición terminó en '+(T.c.isDraw()?'tablas':'una posición decisiva')+'. Repasa las decisiones que te trajeron hasta aquí.','Clase finalizada');return}
+  const after=await ask(T.c.fen(),'depth 10',14),loss=Math.max(0,Math.round((Number(best.score)||0)+(Number(after.score)||0)));
+  let title='Buena decisión',message='';
+  if(loss<=20){title='¡Buena elección! '+actual.san;message='Tu jugada mantiene la evaluación prácticamente igual que la mejor continuación que encontró Stockfish. '}
+  else if(loss<=65){title='Una alternativa más precisa';message='Tu jugada es legal y jugable, pero Stockfish encuentra una opción algo más precisa: '+bestSan+'. '}
+  else{title='Aquí hay algo que aprender';message='Tu jugada permite mejorar la posición al rival. La alternativa más fuerte era '+bestSan+'. ';if(bestMove)T.arrow={from:bestMove.from,to:bestMove.to,kind:'wrong'}}
+  if(actual.captured)message+='Has capturado una pieza: comprueba si la recaptura cambia el balance. ';
+  if(actual.san.includes('+'))message+='Has dado jaque: revisa si obtienes una ganancia concreta después de la respuesta. ';
+  if(actual.flags.includes('k')||actual.flags.includes('q'))message+='Has enrocado y mejorado la seguridad del rey. ';
+  if(['e4','d4','e5','d5'].includes(actual.to))message+='Has intervenido en el centro, ganando espacio y control de casillas. ';
+  message+=L[T.lesson][3]+' Ahora observa la respuesta del rival y piensa qué cambió.';
+  render();coachMessage(title,message,'Decisión '+T.guidedCount+' de '+T.guidedLimit+' · '+(loss<=20?'Muy precisa':loss<=65?'Mejorable':'Revisa la alternativa'));
+ }catch(e){coachMessage('No se pudo analizar esta jugada',e.message,'La posición se conserva si el movimiento no llegó a aplicarse.')}
  finally{T.animating=false}
  await runGuidedReplies();
 }
-function guidedHint(){
- if(!T.guided||T.animating||T.i>=T.m.length)return;
- const probe=new Chess(T.c.fen()),expected=probe.move(T.m[T.i]);if(!expected)return;
- T.arrow={from:expected.from,to:expected.to,kind:'hint'};T.sel=null;render();
- coachMessage('Pista del entrenador','La pieza que debes mover es el '+pieceName(expected.piece)+'. La ruta marcada va de '+expected.from+' a '+expected.to+'. La idea es: '+L[T.lesson][3],'Pista mostrada · Puedes ejecutar la jugada cuando estés listo');
+async function guidedHint(){
+ if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver())return;T.animating=true;
+ try{const result=await ask(T.c.fen(),'depth 12',16),u=result.best,best=u&&u!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===u.slice(0,2)&&x.to===u.slice(2,4)&&(!u[4]||x.promotion===u[4])):null;
+  if(!best){coachMessage('Sin pista disponible','No se encontró una jugada fiable en esta posición. Busca primero jaques, capturas y amenazas.','La partida sigue intacta.');return}
+  T.arrow={from:best.from,to:best.to,kind:'hint'};T.sel=null;render();coachMessage('Pista del entrenador','Stockfish recomienda '+best.san+' ('+best.from+' → '+best.to+'). '+L[T.lesson][3]+' Comprueba qué amenaza resuelve o qué ventaja crea antes de mover.','Pista · La decisión final sigue siendo tuya');
+ }finally{T.animating=false}
 }
-function guidedRestart(){if(T.animating)return;guidedStart()}
 function finishGuided(){
  T.guided=true;T.arrow=null;T.sel=null;const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();render();
  coachMessage('¡Lección completada!','Has jugado toda la línea de esta clase. Quédate con esta idea: '+L[T.lesson][3]+' El aprendizaje está en reconocer el plan, no solo recordar las jugadas.','Completada · '+done.length+' de '+L.length+' clases');
  $('#guidedNext').textContent=T.lesson<L.length-1?'Siguiente clase':'Repetir curso';
 }
 function guidedNext(){
- if(T.animating)return;
- if(T.i<T.m.length){say('Termina la posición actual antes de pasar a otra clase.');return}
+ if(T.animating)return;if(T.guidedCount<T.guidedLimit&&!T.c.isGameOver()){say('Completa las seis decisiones de esta clase antes de pasar a la siguiente.');return}
  const next=T.lesson+1<L.length?T.lesson+1:0;$('#ln').value=String(next);line_();guidedStart();
 }
-$('#guidedStart').onclick=guidedStart;$('#guidedHint').onclick=guidedHint;$('#guidedRetry').onclick=guidedRestart;$('#guidedNext').onclick=guidedNext;
 function mistakeBank(){try{const v=JSON.parse(localStorage.chessMistakeBank||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
 function saveMistake(item){if(!item.fen||!item.bestUci||item.bestUci==='(none)')return false;const bank=mistakeBank(),id=item.fen+'|'+item.bestUci,old=bank.find(x=>x.id===id);if(old){old.lastSeen=Date.now();old.due=Math.min(old.due||Date.now(),Date.now());old.playedSan=item.playedSan;old.loss=item.loss;old.occurrences=(old.occurrences||1)+1}else bank.push({...item,id,repetitions:0,intervalDays:0,due:Date.now(),occurrences:1});localStorage.chessMistakeBank=JSON.stringify(bank.slice(-250));return true}
 function dueMistakes(){return mistakeBank().filter(x=>(x.due||0)<=Date.now()).sort((a,b)=>(a.due||0)-(b.due||0))}
