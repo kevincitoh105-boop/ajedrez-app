@@ -456,7 +456,7 @@ async function runGuidedReplies(){
  try{while(T.guided&&T.c.turn()!==T.humanSide&&!T.c.isGameOver()){
   let response=null;
   if(T.guidedLineActive&&T.guidedLineIndex<T.m.length){const scripted=new Chess(T.c.fen());try{const expected=scripted.move(T.m[T.guidedLineIndex]);if(expected&&expected.color===T.c.turn()){response=T.c.moves({verbose:true}).find(x=>x.from===expected.from&&x.to===expected.to&&x.promotion===expected.promotion);if(response)T.guidedLineIndex++;else T.guidedLineActive=false}else T.guidedLineActive=false}catch(e){T.guidedLineActive=false}}
-  if(!response){const fen=T.c.fen(),result=await ask(fen,'depth 10',14);response=result.best&&result.best!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===result.best.slice(0,2)&&x.to===result.best.slice(2,4)&&(!result.best[4]||x.promotion===result.best[4])):null}
+  if(!response){const fen=T.c.fen(),result=await ask(fen,'depth 10',adaptiveEngineLevel(lessonStats()));response=result.best&&result.best!=='(none)'?T.c.moves({verbose:true}).find(x=>x.from===result.best.slice(0,2)&&x.to===result.best.slice(2,4)&&(!result.best[4]||x.promotion===result.best[4])):null}
   if(!response)response=T.c.moves({verbose:true})[0]||null;if(!response)break;
   await animatePieceMoves(animationForMove(response,response.color));T.c.move({from:response.from,to:response.to,promotion:response.promotion});replies.push(response.san);render();
  }}catch(e){coachMessage('Pausa del entrenador','No se pudo calcular la respuesta del rival: '+e.message+'. La posición actual se conserva.','Puedes continuar o reiniciar la clase.')}
@@ -522,6 +522,7 @@ async function guidedHint(){
 function lessonStats(){try{return JSON.parse(localStorage.chessLessonStats||'{}')[T.lesson]||{decisions:0,solid:0,needsReview:0,retries:0,quizCorrect:0,quizTotal:0}}catch(e){return{decisions:0,solid:0,needsReview:0,retries:0,quizCorrect:0,quizTotal:0}}}
 function saveLessonStats(stats){let all={};try{all=JSON.parse(localStorage.chessLessonStats||'{}')}catch(e){}all[T.lesson]=stats;localStorage.chessLessonStats=JSON.stringify(all)}
 function adaptiveThreshold(stats){const n=stats.decisions||0,rate=n?(stats.solid||0)/n:0;return n>=5?(rate>=.8?40:rate<.45?95:65):70}
+function adaptiveEngineLevel(stats){const n=stats.decisions||0,rate=n?(stats.solid||0)/n:0;return n>=5?(rate>=.8?18:rate<.45?10:14):12}
 function showLessonQuiz(){
  T.quizPending=true;const q=$('#coachQuiz'),stats=lessonStats(),objective=L[T.lesson][2],wrong=L[T.lesson][4];
  q.hidden=false;q.innerHTML='<b>Comprueba lo aprendido</b><p>¿Cuál era el objetivo principal de esta clase?</p>';
