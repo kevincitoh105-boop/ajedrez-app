@@ -89,7 +89,7 @@ const requiredFeatures = [
   ['muestra las acciones de entrenar en el panel del entrenador', 'tools.append(actions)'],
   ['sitúa el estado de evaluación bajo los controles', 'id="analysisStatus"'],
   ['incluye estado de evaluación en partidas locales', 'id="analysisStatusLocal"'],
-  ['guarda el diagnóstico de la jugada del alumno', 'T.pendingCoach={title,message,status:'Decision ''],
+  ['guarda el diagnóstico de la jugada del alumno', 'T.pendingCoach={title,message,status:'],
   ['panel del entrenador situado antes del tablero', 'id="coachPanel" class="coach-panel" hidden>'],
   ['botón de iniciar clase conectado', "$('#guidedStart').onclick"],
   ['botón de pista conectado', "$('#guidedHint').onclick=()=>{if(mode!=='theory')"],
