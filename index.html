@@ -40,7 +40,7 @@ small,#plan{color:var(--mut)}
 .coach-panel{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;background:#f0dfc2;color:#342719;border:2px solid #b89b72;border-radius:12px;padding:10px;margin:8px 0;font-family:Georgia,serif}
 .coach-avatar{width:92px;height:118px;object-fit:cover;object-position:center 22%;border:2px solid #b89b72;border-radius:8px;background:#fff}
 .coach-copy h3{margin:0 0 5px;color:#563d2b;font-size:17px}.coach-copy p{margin:4px 0;font-size:14px;line-height:1.35}
-.coach-tools{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;align-items:center}.coach-tools button,.coach-tools select{font-size:14px;padding:8px 10px}
+.coach-tools{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;align-items:center}.coach-tools button,.coach-tools select{font-size:14px;padding:8px 10px}#coachPanel[data-mode="train"] .coach-tools{display:none}
 #coachMessage{min-height:58px}.coach-tag{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#775a3d}
 .coach-arrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
 .coach-target{box-shadow:inset 0 0 0 3px #299c58}.coach-wrong{box-shadow:inset 0 0 0 3px #d94b4b}
@@ -48,6 +48,11 @@ small,#plan{color:var(--mut)}
 <nav><button id="t1" class="on">Jugar</button><button id="t3">Dos jugadores</button><button id="t2">Teoría</button><button id="t4">Entrenar</button></nav>
 <div id="st"></div>
 <div id="pr" class="row" hidden></div>
+ <div id="coachPanel" class="coach-panel">
+  <img class="coach-avatar" src="assets/coach.webp" alt="Avatar de tu entrenador de ajedrez">
+  <div class="coach-copy"><div class="coach-tag">Tu entrenador personal</div><h3 id="coachTitle">Aprende jugando</h3><p id="coachMessage">Elige una clase y pulsa «Comenzar clase interactiva». Te explicaré el plan, esperaré tus jugadas y te daré pistas cuando las necesites.</p><p id="coachStatus">Clases interactivas · sin conexión · gratis</p></div>
+  <div class="coach-tools"><label>Juegas con <select id="lessonSide"><option value="w">Blancas</option><option value="b">Negras</option></select></label><button id="guidedStart" class="go">Comenzar clase interactiva</button><button id="guidedHint">Pista</button><button id="guidedRetry">Reiniciar clase</button><button id="guidedNext">Siguiente clase</button></div>
+ </div>
 <div id="board"></div>
 <div id="theoryNav" class="row" hidden><button id="p0">⏮ Inicio</button><button id="p1">◀ Anterior</button><button id="p2">Siguiente ▶</button><span id="pn"></span></div>
 <div id="mv"></div>
@@ -61,11 +66,7 @@ small,#plan{color:var(--mut)}
 <div id="reviewResults" class="lesson" hidden></div>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
- <div id="coachPanel" class="coach-panel">
-  <img class="coach-avatar" src="assets/coach.webp" alt="Avatar de tu entrenador de ajedrez">
-  <div class="coach-copy"><div class="coach-tag">Tu entrenador personal</div><h3 id="coachTitle">Aprende jugando</h3><p id="coachMessage">Elige una clase y pulsa «Comenzar clase interactiva». Te explicaré el plan, esperaré tus jugadas y te daré pistas cuando las necesites.</p><p id="coachStatus">Clases interactivas · sin conexión · gratis</p></div>
-  <div class="coach-tools"><label>Juegas con <select id="lessonSide"><option value="w">Blancas</option><option value="b">Negras</option></select></label><button id="guidedStart" class="go">Comenzar clase interactiva</button><button id="guidedHint">Pista</button><button id="guidedRetry">Reiniciar clase</button><button id="guidedNext">Siguiente clase</button></div>
- </div>
+
  <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div><div id="lessonStep" class="lesson"></div>
  <div class="row"><button id="markDone" class="go">Marcar clase como completada</button></div>
  <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
@@ -192,7 +193,7 @@ async function animatePieceMoves(moves){
   const a=piece.getBoundingClientRect(),b=to.getBoundingClientRect(),ghost=piece.cloneNode(true);ghost.classList.add('piece-flight');ghost.style.left=a.left+'px';ghost.style.top=a.top+'px';ghost.style.width=a.width+'px';ghost.style.height=a.height+'px';ghost.style.fontSize=getComputedStyle(piece).fontSize;ghost.style.fontFamily=getComputedStyle(piece).fontFamily;ghost.style.lineHeight='1';document.body.append(ghost);piece.style.visibility='hidden';
   flights.push({ghost,piece,animation:ghost.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(b.left-a.left)+'px,'+(b.top-a.top)+'px)'}],{duration:210,easing:'cubic-bezier(.2,.75,.25,1)'})});
  }
- try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();x.piece.style.visibility=''}}
+ try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();/* La pieza original permanece oculta hasta que el movimiento se confirma y render() reconstruye el tablero. Así no parece regresar a su casilla de origen. */x.piece.style.visibility='hidden'}}
 }
 function animationForMove(m,color){const moves=[{from:m.from,to:m.to}];if(m.flags&&m.flags.includes('k'))moves.push({from:color==='w'?'h1':'h8',to:color==='w'?'f1':'f8'});if(m.flags&&m.flags.includes('q'))moves.push({from:color==='w'?'a1':'a8',to:color==='w'?'d1':'d8'});return moves}
 async function move(m){if(G.busy||G.over)return;const mover=G.g.turn(),candidate=G.g.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
@@ -269,7 +270,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   const tip=document.createElement('p');tip.innerHTML='<b>Cómo reconocerlo la próxima vez:</b> ';tip.append(document.createTextNode('Antes de confirmar una jugada, haz una pausa y busca en este orden: 1) jaques del rival; 2) capturas que puede realizar; 3) amenazas directas; 4) piezas propias sin defensa o sobrecargadas; 5) casillas que dejas débiles al mover un peón. Luego compara tu candidata con la mejor alternativa: ¿qué problema resuelve cada una?'));box.append(tip);
   if(saved){const savedNote=document.createElement('p');savedNote.className='coach-note';savedNote.textContent='Este error se guardó automáticamente en Entrenar errores. Volverá a aparecer para que practiques la mejor respuesta.';box.append(savedNote)}
   const caveat=document.createElement('small');caveat.textContent='Análisis orientativo de Stockfish a profundidad limitada. La mejor respuesta indicada es la principal que encontró el motor en ese momento; en posiciones complejas puede cambiar con más cálculo. La explicación estratégica ayuda a interpretar la variante, pero no sustituye reproducirla en el tablero.';box.append(caveat);
-  const old=$('#move-review');if(old)old.remove();$('#mv').after(box);
+  const old=$('#move-review');if(old)old.remove();(mode==='local'?$('#local'):$('#play')).after(box);
  }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
  finally{evalBusy=false;if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
 }
@@ -295,7 +296,7 @@ const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent=
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=$('#col').value;G.lvl=test?6:+$('#lv').value;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel con '+(G.me==='b'?'negras':'blancas')+': juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#reviewResults').hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';
+function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train';$('#coachPanel').dataset.mode=mode;$('#reviewResults').hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
 function showLesson(){const l=L[T.lesson];progressText();const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>'+phaseGuide(l);renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
@@ -514,7 +515,8 @@ async function reviewGame(){if(G.busy)return;const history=G.g.history({verbose:
  }catch(e){$('#reviewResults').textContent='El análisis se interrumpió: '+e.message+'. La partida original sigue intacta.';say('No se pudo completar el análisis de la partida.')}finally{G.busy=false}}
 $('#reviewGame').onclick=reviewGame;$('#reviewLocal').onclick=reviewGame;
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
-$('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
+$('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;
+$('#guidedStart').onclick=()=>{if(mode!=='theory'){mode='theory';tabs()}guidedStart()};$('#guidedHint').onclick=guidedHint;$('#guidedRetry').onclick=()=>guidedStart();$('#guidedNext').onclick=guidedNext;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
 $('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};$('#t4').onclick=()=>{mode='train';tabs();startTraining()};
 $('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
