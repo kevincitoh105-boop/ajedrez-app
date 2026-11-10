@@ -69,7 +69,12 @@ const requiredFeatures = [
   ['respuesta automática del rival', 'async function runGuidedReplies()'],
   ['pistas con flechas', 'function guidedHint()'],
   ['avatar del entrenador', 'assets/coach.webp'],
-  ['selección de color en lecciones', 'id="lessonSide"']
+  ['selección de color en lecciones', 'id="lessonSide"'],
+  ['entrenador que acepta decisiones propias', 'async function lessonMove(m)'],
+  ['respuesta del rival calculada en directo', "await ask(fen,'depth 10',14)"],
+  ['análisis de la jugada del alumno', "const after=await ask(T.c.fen(),'depth 10',14)"],
+  ['pistas calculadas para la posición actual', 'async function guidedHint()'],
+  ['seis decisiones interactivas por clase', 'guidedLimit=6']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
