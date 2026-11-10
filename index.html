@@ -34,8 +34,11 @@ small,#plan{color:var(--mut)}
 .lesson b{color:#f2b441}.lesson .tag{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
 #altplay,#backline{flex:1}
 [hidden]{display:none!important}
+
+#board{position:relative}.piece-flight{position:fixed;z-index:9999;pointer-events:none;margin:0;will-change:transform;text-shadow:0 1px 4px #0008}
+#trainFeedback{min-height:5em}.coach-note{border-left:3px solid var(--ac);padding:8px 10px;background:#1a2a31;border-radius:4px;margin:8px 0}
 </style></head><body><main>
-<nav><button id="t1" class="on">Jugar</button><button id="t3">Dos jugadores</button><button id="t2">Teoría</button></nav>
+<nav><button id="t1" class="on">Jugar</button><button id="t3">Dos jugadores</button><button id="t2">Teoría</button><button id="t4">Entrenar</button></nav>
 <div id="st"></div>
 <div id="pr" class="row" hidden></div>
 <div id="board"></div>
@@ -55,6 +58,12 @@ small,#plan{color:var(--mut)}
  <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
  <div class="row"><button id="backline">Volver a la línea del curso</button></div>
  <p id="plan"></p>
+</section>
+<section id="train" hidden>
+ <div id="trainSummary" class="lesson"></div>
+ <div class="row"><button id="trainStart" class="go">Entrenar errores pendientes</button><button id="trainHint">💡 Pista</button><button id="trainReveal">Ver solución</button><button id="trainNext">Siguiente</button></div>
+ <div id="trainFeedback" class="lesson">Aquí aparecerán tus errores guardados y los ejercicios pendientes.</div>
+ <p id="trainRules" class="coach-note">Los errores se guardan en este dispositivo. Cada acierto aumenta el intervalo antes de volver a practicar. No hay cuentas ni suscripciones.</p>
 </section>
 </main>
 <script type="module">
@@ -114,6 +123,7 @@ let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
 let evalBusy=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
 const T={c:new Chess(),m:[],i:0,branch:false,lesson:0};
+const R={items:[],index:0,current:null,revealed:false};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
 const CAND=['stockfish-nnue-16-single.js','stockfish.js','stockfish-nnue-16-asm.js'];
 const tryEngine=f=>new Promise(res=>{let w;try{w=new Worker('engine/'+f)}catch(e){engErr=f+': '+e.message;return res(null)}
@@ -141,13 +151,13 @@ async function ask(fen,go,lvl){await EP;
 /* ---------- UI ---------- */
 const say=t=>$('#st').textContent=t;
 const flipped=()=>(G.me==='b')!==G.flip;
-const view=()=>mode==='theory'?{c:T.c,f:theoryBlackPerspective()}:{c:G.g,f:mode==='local'?G.g.turn()==='b':flipped()};
+const view=()=>mode==='theory'?{c:T.c,f:theoryBlackPerspective()}:{c:G.g,f:(mode==='local'||mode==='train')?G.g.turn()==='b':flipped()};
 function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
- const tg=(mode==='play'||mode==='local')&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
+ const tg=(mode==='play'||mode==='local'||mode==='train')&&G.sel?c.moves({square:G.sel,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
-  d.className='sq '+((r+k)%2?'d':'l')+(mode==='play'&&sq===G.sel?' sel':'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
-  if(p){const s=document.createElement('span');s.className=p.color;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
+  d.dataset.square=sq;d.className='sq '+((r+k)%2?'d':'l')+((mode==='play'||mode==='local'||mode==='train')&&sq===G.sel?' sel':'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
+  if(p){const s=document.createElement('span');s.className=p.color;s.dataset.piece=p.type;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
   const screenRow=i>>3,screenCol=i&7;
   if(screenCol===0){const label=document.createElement('small');label.className='coord rank';label.textContent=sq[1];d.append(label)}
   if(screenRow===7){const label=document.createElement('small');label.className='coord file';label.textContent=sq[0];d.append(label)}
@@ -158,16 +168,23 @@ function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.boar
 function turnText(){const c=G.g;return(c.turn()===G.me?'Tu turno':'Piensa el rival')+(c.inCheck()?' · jaque':'')}
 function overText(){const c=G.g;if(c.isCheckmate())return c.turn()===G.me?'Jaque mate. Perdiste.':'Jaque mate. ¡Ganaste!';return c.isDraw()?'Tablas.':''}
 const vib=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
-function tap(sq){if((mode!=='play'&&mode!=='local')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me))return;const c=G.g;
+function tap(sq){if((mode!=='play'&&mode!=='local'&&mode!=='train')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me)||(mode==='train'&&G.trainSolved))return;const c=G.g;
  if(G.sel){const ms=c.moves({square:G.sel,verbose:true}).filter(x=>x.to===sq);
-  if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return move({from:G.sel,to:sq})}}
- const p=c.get(sq),sideToMove=c.turn();G.sel=p&&p.color===(mode==='local'?sideToMove:G.me)?sq:null;render()}
-function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{const m={...G.pm,promotion:t};G.pm=null;p.hidden=true;move(m)};p.append(b)}}
-async function move(m){
- const before=G.g.fen(),mover=G.g.turn(),san=G.g.move(m).san,afterFen=G.g.fen();
- G.sel=null;G.hint=null;vib();render();
- if(mode==='play'||mode==='local')await diagnoseMove(before,afterFen,mover,san,m.from+m.to+(m.promotion||''));
- await after();
+  if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return mode==='train'?trainMove({from:G.sel,to:sq}):move({from:G.sel,to:sq})}}
+ const p=c.get(sq),sideToMove=c.turn();G.sel=p&&p.color===(mode==='local'||mode==='train'?sideToMove:G.me)?sq:null;render()}
+function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{const m={...G.pm,promotion:t};G.pm=null;p.hidden=true;mode==='train'?trainMove(m):move(m)};p.append(b)}}
+async function animatePieceMoves(moves){
+ const board=$('#board'),flights=[];
+ for(const move of moves){const from=Array.from(board.children).find(x=>x.dataset.square===move.from),to=Array.from(board.children).find(x=>x.dataset.square===move.to),piece=from&&from.querySelector('span');if(!piece||!to)continue;
+  const a=piece.getBoundingClientRect(),b=to.getBoundingClientRect(),ghost=piece.cloneNode(true);ghost.classList.add('piece-flight');ghost.style.left=a.left+'px';ghost.style.top=a.top+'px';ghost.style.width=a.width+'px';ghost.style.height=a.height+'px';document.body.append(ghost);piece.style.visibility='hidden';
+  flights.push({ghost,piece,animation:ghost.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(b.left-a.left)+'px,'+(b.top-a.top)+'px)'}],{duration:210,easing:'cubic-bezier(.2,.75,.25,1)'})});
+ }
+ try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();x.piece.style.visibility=''}}
+}
+function animationForMove(m,color){const moves=[{from:m.from,to:m.to}];if(m.flags&&m.flags.includes('k'))moves.push({from:color==='w'?'h1':'h8',to:color==='w'?'f1':'f8'});if(m.flags&&m.flags.includes('q'))moves.push({from:color==='w'?'a1':'a8',to:color==='w'?'d1':'d8'});return moves}
+async function move(m){if(G.busy||G.over)return;const mover=G.g.turn(),candidate=G.g.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
+ G.busy=true;G.sel=null;G.hint=null;vib();await animatePieceMoves(animationForMove(candidate,mover));const before=G.g.fen(),san=G.g.move(m).san,afterFen=G.g.fen();render();
+ try{if(mode==='play'||mode==='local')await diagnoseMove(before,afterFen,mover,san,m.from+m.to+(m.promotion||''))}finally{G.busy=false}await after();
 }
 async function diagnoseMove(before,afterFen,mover,san,uci){
  if(evalBusy)return;
@@ -215,6 +232,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   if(actual.piece==='p'&&!actual.captured&&!['e4','d4','e5','d5'].includes(actual.to))facts.push('Este avance deja casillas detrás que ya no podrán ser defendidas por otro peón. Identifica cuáles quedan débiles.');
   if(after.isCheck())facts.push('Tu rey está en jaque: la prioridad es salir del jaque, no continuar con un plan.');
   const label=loss<=10?'EXCELENTE':loss<=30?'BUENA':loss<=70?'IMPRECISA':loss<=130?'MALA':loss<=250?'MUY MALA':'ERROR GRAVE';
+  const saved=loss>=70?saveMistake({fen:before,playedSan:san,bestSan,bestUci:best.best||'',replySan,loss,createdAt:Date.now()}):false;
   const color=loss<=30?'#9bd6a5':loss<=70?'#f2d27a':'#ff9999';
   const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:12px;margin:8px 0;border:1px solid #71858a;border-radius:10px;background:#22343c;line-height:1.5';
   const title=document.createElement('h3');title.style.cssText='margin:0 0 8px;color:'+color;title.textContent='Tu jugada: '+label+' · '+san+' · pérdida estimada '+loss+' cp';box.append(title);
@@ -236,6 +254,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   const detail=document.createElement('p');detail.innerHTML='<b>Qué produjo tu jugada:</b> ';detail.append(document.createTextNode(facts.join(' ')||'No aparece un motivo elemental evidente. Compara la seguridad de las piezas, las casillas débiles y la actividad de ambos bandos.'));box.append(detail);
   const plan=document.createElement('p');plan.innerHTML='<b>Qué plan seguir ahora:</b> ';plan.append(document.createTextNode('Primero neutraliza la amenaza concreta de la respuesta rival. Después mejora tu pieza peor colocada, protege las piezas que hayan quedado vulnerables y prepara una ruptura central o una columna útil. No intentes ejecutar las tres ideas a la vez: elige la que la posición permita y vuelve a evaluar tras la respuesta del contrario.'));box.append(plan);
   const tip=document.createElement('p');tip.innerHTML='<b>Cómo reconocerlo la próxima vez:</b> ';tip.append(document.createTextNode('Antes de confirmar una jugada, haz una pausa y busca en este orden: 1) jaques del rival; 2) capturas que puede realizar; 3) amenazas directas; 4) piezas propias sin defensa o sobrecargadas; 5) casillas que dejas débiles al mover un peón. Luego compara tu candidata con la mejor alternativa: ¿qué problema resuelve cada una?'));box.append(tip);
+  if(saved){const savedNote=document.createElement('p');savedNote.className='coach-note';savedNote.textContent='Este error se guardó automáticamente en Entrenar errores. Volverá a aparecer para que practiques la mejor respuesta.';box.append(savedNote)}
   const caveat=document.createElement('small');caveat.textContent='Análisis orientativo de Stockfish a profundidad limitada. La mejor respuesta indicada es la principal que encontró el motor en ese momento; en posiciones complejas puede cambiar con más cálculo. La explicación estratégica ayuda a interpretar la variante, pero no sustituye reproducirla en el tablero.';box.append(caveat);
   const old=$('#move-review');if(old)old.remove();$('#mv').after(box);
  }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
@@ -244,7 +263,9 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
 function pieceName(p){return ({p:'peón',n:'caballo',b:'alfil',r:'torre',q:'dama',k:'rey'})[p]||'pieza'}
 async function after(){const o=overText();if(o)return finish(o);if(mode==='local'){say((G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.');return}say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
 async function engineTurn(){G.busy=true;say('Piensa el rival…');const r=await ask(G.g.fen(),'movetime '+(200+G.lvl*45),G.lvl),b=r.best;setEng();
- G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});G.busy=false;vib();render();const o=overText();o?finish(o):say(turnText())}
+ if(!b||b==='(none)'){G.busy=false;const done=overText();done?finish(done):say('El motor no devolvió una jugada. Puedes volver a intentarlo o iniciar otra partida.');return}
+ const candidate=G.g.moves({verbose:true}).find(x=>x.from===b.slice(0,2)&&x.to===b.slice(2,4)&&(!b[4]||x.promotion===b[4]));if(!candidate){G.busy=false;say('El motor devolvió una jugada no legal; no se aplicó.');return}
+ await animatePieceMoves(animationForMove(candidate,G.g.turn()));G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});G.busy=false;vib();render();const o=overText();o?finish(o):say(turnText())}
 function finish(t){G.over=true;say(t);if(G.test)analyze()}
 async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Motor: '+engName+(engErr?' · '+engErr:'')));
  const h=G.g.history({verbose:true}),n=h.filter(m=>m.color===G.me).length;if(n<12)return say('Muestra insuficiente: juega al menos 12 jugadas con '+(G.me==='b'?'negras':'blancas')+' y repite el test.');
@@ -261,7 +282,7 @@ const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent=
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=$('#col').value;G.lvl=test?6:+$('#lv').value;
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel con '+(G.me==='b'?'negras':'blancas')+': juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';
+function tabs(){$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory';$('#train').hidden=mode!=='train';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
 function showLesson(){const l=L[T.lesson];progressText();const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>'+phaseGuide(l);renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
@@ -367,26 +388,34 @@ function line_(){
  T.i=0;T.branch=false;T.c=new Chess();
  showLesson();step(0,0);
 }
-function step(d,abs){
+async function step(d,abs){
  if(T.branch){say('Estás explorando una variante. Pulsa «Volver a la línea del curso» para continuar.');return}
- const target=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));
- const next=new Chess();let applied=0,error='';
- for(const san of T.m.slice(0,target)){
-  try{const move=next.move(san);if(!move){error='La notación «'+san+'» no se pudo interpretar.';break}applied++}
-  catch(e){error='La jugada «'+san+'» no es válida en esta línea: '+e.message;break}
- }
- T.c=next;T.i=applied;
+ const target=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));let error='';
+ if(target===T.i+1){try{const probe=new Chess(T.c.fen()),m=probe.move(T.m[T.i]);if(!m)throw new Error('notación no reconocida');await animatePieceMoves(animationForMove(m,m.color));T.c.move(T.m[T.i]);T.i++}catch(e){error='La jugada «'+T.m[T.i]+'» no es válida en esta línea: '+e.message}}
+ else if(target===T.i-1){try{const hist=T.c.history({verbose:true}),m=hist[hist.length-1];if(m){const reverse=[{from:m.to,to:m.from}];if(m.flags.includes('k'))reverse.push({from:m.color==='w'?'f1':'f8',to:m.color==='w'?'h1':'h8'});if(m.flags.includes('q'))reverse.push({from:m.color==='w'?'d1':'d8',to:m.color==='w'?'a1':'a8'});await animatePieceMoves(reverse);T.c.undo();T.i--}}catch(e){error='No se pudo retroceder la jugada: '+e.message}}
+ else{const next=new Chess();let applied=0;for(const san of T.m.slice(0,target)){try{const m=next.move(san);if(!m)throw new Error('notación no reconocida');applied++}catch(e){error='La jugada «'+san+'» no es válida en esta línea: '+e.message;break}}T.c=next;T.i=applied}
  $('#pn').textContent='Jugada '+T.i+' de '+T.m.length;
  fillAlternatives();renderLessonStep();render();
  if(error)say(error+' Se ha detenido la reproducción en la última posición válida.');
  else if(T.i===T.m.length)say('Fin de la línea. Puedes volver atrás o probar una variante.');
  else say(T.i===0?'Inicio de la línea. Pulsa Siguiente para comenzar.':'Línea reproducida correctamente.');
 }
-async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best;const reply=T.c.moves({square:x.slice(0,2),verbose:true}).find(y=>y.to===x.slice(2,4));if(reply){T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
+async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');await animatePieceMoves(animationForMove(m,m.color));T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best,reply=T.c.moves({verbose:true}).find(y=>y.from===x.slice(0,2)&&y.to===x.slice(2,4)&&(!x[4]||y.promotion===x[4]));if(reply){await animatePieceMoves(animationForMove(reply,reply.color));T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
 function resetLine(){T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
+function mistakeBank(){try{const v=JSON.parse(localStorage.chessMistakeBank||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
+function saveMistake(item){if(!item.fen||!item.bestUci||item.bestUci==='(none)')return false;const bank=mistakeBank(),id=item.fen+'|'+item.bestUci,old=bank.find(x=>x.id===id);if(old){old.lastSeen=Date.now();old.occurrences=(old.occurrences||1)+1}else bank.push({...item,id,repetitions:0,intervalDays:0,due:Date.now(),occurrences:1});localStorage.chessMistakeBank=JSON.stringify(bank.slice(-250));return true}
+function dueMistakes(){return mistakeBank().filter(x=>(x.due||0)<=Date.now()).sort((a,b)=>(a.due||0)-(b.due||0))}
+function updateTrainingSummary(){const bank=mistakeBank(),due=dueMistakes().length;$('#trainSummary').innerHTML='<div class="tag">Entrenamiento personal · gratis y sin conexión</div><h3>Aprende de tus propias partidas</h3><p>Errores guardados: <b>'+bank.length+'</b> · Pendientes ahora: <b>'+due+'</b></p><p>Los ejercicios nacen de tus errores de análisis. Cada respuesta correcta amplía el intervalo de repaso (1, 3, 7, 14 y 30 días).</p>'}
+function loadTrainingItem(){const item=R.items[R.index];if(!item){R.current=null;G.trainSolved=false;updateTrainingSummary();$('#trainFeedback').textContent='Terminaste los errores pendientes de esta sesión. Los próximos repasos aparecerán cuando llegue su fecha.';say('No quedan ejercicios pendientes en esta sesión.');return}R.current=item;R.revealed=false;G.g=new Chess(item.fen);G.sel=null;G.over=false;G.busy=false;G.trainExpected=item.bestUci;G.trainSolved=false;render();$('#trainFeedback').innerHTML='<div class="tag">Error real guardado · '+(R.index+1)+' de '+R.items.length+'</div><h3>Encuentra la mejor jugada</h3><p>En esta posición, durante una partida anterior, jugaste <b>'+item.playedSan+'</b>. El análisis encontró una alternativa mejor.</p><p>Calcula antes de tocar: jaques, capturas, amenazas y seguridad de tus piezas. La solución sigue oculta.</p>';say('Entrenamiento: encuentra la mejor jugada para el bando que tiene el turno.')}
+function startTraining(){R.items=dueMistakes();R.index=0;updateTrainingSummary();if(!R.items.length){R.current=null;$('#trainFeedback').textContent=mistakeBank().length?'No tienes repasos vencidos. Tus errores guardados volverán a aparecer según su calendario.':'Todavía no hay errores guardados. Juega una partida y el entrenador guardará automáticamente los errores importantes.';say('No hay errores pendientes para entrenar.');return}loadTrainingItem()}
+function markTrainingSuccess(){const item=R.current;if(!item)return;const bank=mistakeBank(),entry=bank.find(x=>x.id===item.id);if(!entry)return;entry.repetitions=(entry.repetitions||0)+1;entry.intervalDays=[1,3,7,14,30][Math.min(entry.repetitions-1,4)];entry.due=Date.now()+entry.intervalDays*86400000;entry.lastCorrect=Date.now();localStorage.chessMistakeBank=JSON.stringify(bank);updateTrainingSummary()}
+async function trainMove(m){if(!R.current||G.trainSolved||G.busy)return;const uci=m.from+m.to+(m.promotion||'');if(uci!==G.trainExpected){$('#trainFeedback').innerHTML='<h3>Esta no es la mejor continuación.</h3><p>Vuelve a comprobar las amenazas inmediatas y las piezas que quedan sin defensa. Prueba otra opción o pide una pista.</p>';say('Todavía no. Busca jaques, capturas y amenazas antes de decidir.');return}const candidate=G.g.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;G.busy=true;await animatePieceMoves(animationForMove(candidate,G.g.turn()));G.g.move(m);G.busy=false;G.trainSolved=true;G.sel=null;markTrainingSuccess();render();$('#trainFeedback').innerHTML='<h3>¡Correcto! Has encontrado la mejor jugada guardada.</h3><p><b>Tu respuesta:</b> '+candidate.san+'.</p><p><b>Por qué:</b> esta era la alternativa que mantenía mejor la posición según el análisis de tu partida. Compara la amenaza que permitía tu jugada anterior con las opciones que ahora quedan al rival.</p><p>Este patrón volverá a aparecer más adelante para comprobar que lo has aprendido.</p>';say('Ejercicio resuelto. Pulsa Siguiente para continuar.')}
+$('#trainStart').onclick=startTraining;$('#trainNext').onclick=()=>{if(R.current&&G.trainSolved){R.index++;loadTrainingItem()}else if(!R.current)startTraining();else say('Resuelve la posición o consulta la solución antes de continuar.')};
+$('#trainHint').onclick=()=>{if(!R.current)return;$('#trainFeedback').insertAdjacentHTML('beforeend','<p class="coach-note"><b>Pista:</b> no empieces buscando una combinación espectacular. Comprueba primero qué jaques y capturas tiene el rival, qué pieza está atacada y si puedes mejorar una pieza con tiempo.</p>');say('Pista añadida. La solución sigue oculta.')};
+$('#trainReveal').onclick=async()=>{if(!R.current||G.trainSolved||G.busy)return;const u=G.trainExpected,from=u.slice(0,2),to=u.slice(2,4),promotion=u[4],m=G.g.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m){say('La solución guardada no coincide con una jugada legal en esta posición. No se modificó el ejercicio.');return}G.busy=true;await animatePieceMoves(animationForMove(m,G.g.turn()));G.g.move({from,to,promotion});G.busy=false;G.trainSolved=true;G.sel=null;render();$('#trainFeedback').innerHTML='<h3>Solución: '+m.san+'</h3><p>La jugada recomendada por el análisis era '+m.from+' → '+m.to+'. Reproduce la posición y compara qué amenaza neutraliza o qué recurso crea.</p><p>No se cuenta como acierto porque se mostró la respuesta. Puedes pasar al siguiente ejercicio.</p>';say('Solución mostrada. No se registra como acierto.')};
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
 $('#ln').onchange=line_;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
-$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};
+$('#t1').onclick=()=>{mode='play';tabs();say(G.over?'':turnText())};$('#t3').onclick=()=>{mode='local';G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;tabs();render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')};$('#t2').onclick=()=>{mode='theory';tabs();line_()};$('#t4').onclick=()=>{mode='train';tabs();startTraining()};
 $('#lnw').onclick=()=>{G.g=new Chess();G.sel=null;G.over=false;G.pm=null;const old=$('#move-review');if(old)old.remove();render();say('Nueva partida local. Turno de blancas.')};
 $('#nw').onclick=()=>start(false);$('#ts').onclick=()=>start(true);$('#lv').oninput=lvl;$('#col').onchange=()=>{G.flip=false};
 $('#fl').onclick=()=>{G.flip=!G.flip;render()};
