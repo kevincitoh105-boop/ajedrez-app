@@ -62,7 +62,7 @@ small,#plan{color:var(--mut)}
  <div class="row"><button class="go" id="nw">Nueva partida</button><button id="ts">Test de nivel</button><button id="un">Deshacer</button><button id="rs">Rendirse</button><button id="reviewGame">Analizar partida</button></div><p id="analysisStatus" class="coach-note" hidden></p>
  <small id="elo"></small><br><small id="eng"></small>
 </section>
-<section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p><button id="reviewLocal">Analizar esta partida</button></section>
+<section id="local" hidden><div class="row"><b>Partida local · dos personas</b><button id="lnw" class="go">Nueva partida</button></div><p id="localhelp">Pásale el teléfono a la otra persona después de cada turno. No se necesita Internet.</p><button id="reviewLocal">Analizar esta partida</button><p id="analysisStatusLocal" class="coach-note" hidden></p></section>
 <div id="reviewResults" class="lesson" hidden></div>
 <section id="theory" hidden>
  <div class="row"><select id="ln" style="width:100%"></select></div>
@@ -204,7 +204,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
  if(evalBusy)return;
  evalBusy=true;
  try{
-  $('#analysisStatus').hidden=false;$('#analysisStatus').textContent='Evaluando tu jugada: calculando la mejor alternativa y las amenazas…';
+  const statusBox=mode==='local'?$('#analysisStatusLocal'):$('#analysisStatus');statusBox.hidden=false;statusBox.textContent='Evaluando tu jugada: calculando la mejor alternativa y las amenazas…';
   const best=await ask(before,'depth 14',20);
   const playedEval=await ask(afterFen,'depth 14',20);
   const playedPerspective=-playedEval.score;
@@ -270,9 +270,9 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   const tip=document.createElement('p');tip.innerHTML='<b>Cómo reconocerlo la próxima vez:</b> ';tip.append(document.createTextNode('Antes de confirmar una jugada, haz una pausa y busca en este orden: 1) jaques del rival; 2) capturas que puede realizar; 3) amenazas directas; 4) piezas propias sin defensa o sobrecargadas; 5) casillas que dejas débiles al mover un peón. Luego compara tu candidata con la mejor alternativa: ¿qué problema resuelve cada una?'));box.append(tip);
   if(saved){const savedNote=document.createElement('p');savedNote.className='coach-note';savedNote.textContent='Este error se guardó automáticamente en Entrenar errores. Volverá a aparecer para que practiques la mejor respuesta.';box.append(savedNote)}
   const caveat=document.createElement('small');caveat.textContent='Análisis orientativo de Stockfish a profundidad limitada. La mejor respuesta indicada es la principal que encontró el motor en ese momento; en posiciones complejas puede cambiar con más cálculo. La explicación estratégica ayuda a interpretar la variante, pero no sustituye reproducirla en el tablero.';box.append(caveat);
-  const old=$('#move-review');if(old)old.remove();(mode==='local'?$('#local'):$('#play')).after(box);$('#analysisStatus').hidden=true;$('#analysisStatus').textContent='';
+  const old=$('#move-review');if(old)old.remove();(mode==='local'?$('#local'):$('#play')).after(box);statusBox.hidden=true;statusBox.textContent='';
  }catch(e){say('Jugada realizada. No se pudo completar el análisis: '+e.message)}
- finally{evalBusy=false;$('#analysisStatus').hidden=true;$('#analysisStatus').textContent='';if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
+ finally{evalBusy=false;$('#analysisStatus').hidden=true;$('#analysisStatus').textContent='';$('#analysisStatusLocal').hidden=true;$('#analysisStatusLocal').textContent='';if(!G.over)say(mode==='local'?(G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.':turnText())}
 }
 function pieceName(p){return ({p:'peón',n:'caballo',b:'alfil',r:'torre',q:'dama',k:'rey'})[p]||'pieza'}
 async function after(){const o=overText();if(o)return finish(o);if(mode==='local'){say((G.g.turn()==='w'?'Turno de blancas':'Turno de negras')+'. Pasa el teléfono.');return}say(turnText());if(G.g.turn()!==G.me)await engineTurn()}
