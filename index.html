@@ -123,7 +123,7 @@ L.push(
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
 let evalBusy=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null};
-const T={c:new Chess(),m:[],i:0,branch:false,lesson:0};
+const T={c:new Chess(),m:[],i:0,branch:false,lesson:0,animating:false};
 const R={items:[],index:0,current:null,revealed:false};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
 const CAND=['stockfish-nnue-16-single.js','stockfish.js','stockfish-nnue-16-asm.js'];
@@ -391,18 +391,21 @@ function line_(){
 }
 async function step(d,abs){
  if(T.branch){say('Estás explorando una variante. Pulsa «Volver a la línea del curso» para continuar.');return}
- const target=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));let error='';
- if(target===T.i+1){try{const probe=new Chess(T.c.fen()),m=probe.move(T.m[T.i]);if(!m)throw new Error('notación no reconocida');await animatePieceMoves(animationForMove(m,m.color));T.c.move(T.m[T.i]);T.i++}catch(e){error='La jugada «'+T.m[T.i]+'» no es válida en esta línea: '+e.message}}
- else if(target===T.i-1){try{const hist=T.c.history({verbose:true}),m=hist[hist.length-1];if(m){const reverse=[{from:m.to,to:m.from}];if(m.flags.includes('k'))reverse.push({from:m.color==='w'?'f1':'f8',to:m.color==='w'?'h1':'h8'});if(m.flags.includes('q'))reverse.push({from:m.color==='w'?'d1':'d8',to:m.color==='w'?'a1':'a8'});await animatePieceMoves(reverse);T.c.undo();T.i--}}catch(e){error='No se pudo retroceder la jugada: '+e.message}}
- else{const next=new Chess();let applied=0;for(const san of T.m.slice(0,target)){try{const m=next.move(san);if(!m)throw new Error('notación no reconocida');applied++}catch(e){error='La jugada «'+san+'» no es válida en esta línea: '+e.message;break}}T.c=next;T.i=applied}
- $('#pn').textContent='Jugada '+T.i+' de '+T.m.length;
- fillAlternatives();renderLessonStep();render();
- if(error)say(error+' Se ha detenido la reproducción en la última posición válida.');
- else if(T.i===T.m.length)say('Fin de la línea. Puedes volver atrás o probar una variante.');
- else say(T.i===0?'Inicio de la línea. Pulsa Siguiente para comenzar.':'Línea reproducida correctamente.');
+ if(T.animating){say('La pieza todavía está en movimiento. Espera un instante.');return}
+ T.animating=true;
+ try{
+  const target=abs!==undefined?abs:Math.max(0,Math.min(T.m.length,T.i+d));let error='';
+  if(target===T.i+1){try{const probe=new Chess(T.c.fen()),m=probe.move(T.m[T.i]);if(!m)throw new Error('notación no reconocida');await animatePieceMoves(animationForMove(m,m.color));T.c.move(T.m[T.i]);T.i++}catch(e){error='La jugada «'+T.m[T.i]+'» no es válida en esta línea: '+e.message}}
+  else if(target===T.i-1){try{const hist=T.c.history({verbose:true}),m=hist[hist.length-1];if(m){const reverse=[{from:m.to,to:m.from}];if(m.flags.includes('k'))reverse.push({from:m.color==='w'?'f1':'f8',to:m.color==='w'?'h1':'h8'});if(m.flags.includes('q'))reverse.push({from:m.color==='w'?'d1':'d8',to:m.color==='w'?'a1':'a8'});await animatePieceMoves(reverse);T.c.undo();T.i--}}catch(e){error='No se pudo retroceder la jugada: '+e.message}}
+  else{const next=new Chess();let applied=0;for(const san of T.m.slice(0,target)){try{const m=next.move(san);if(!m)throw new Error('notación no reconocida');applied++}catch(e){error='La jugada «'+san+'» no es válida en esta línea: '+e.message;break}}T.c=next;T.i=applied}
+  $('#pn').textContent='Jugada '+T.i+' de '+T.m.length;fillAlternatives();renderLessonStep();render();
+  if(error)say(error+' Se ha detenido la reproducción en la última posición válida.');
+  else if(T.i===T.m.length)say('Fin de la línea. Puedes volver atrás o probar una variante.');
+  else say(T.i===0?'Inicio de la línea. Pulsa Siguiente para comenzar.':'Línea reproducida correctamente.');
+ }finally{T.animating=false}
 }
-async function explore(){if(T.branch)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' ');const m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');await animatePieceMoves(animationForMove(m,m.color));T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');try{const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best,reply=T.c.moves({verbose:true}).find(y=>y.from===x.slice(0,2)&&y.to===x.slice(2,4)&&(!x[4]||y.promotion===x[4]));if(reply){await animatePieceMoves(animationForMove(reply,reply.color));T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo calcular la respuesta del motor.')}}
-function resetLine(){T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
+async function explore(){if(T.branch||T.animating)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' '),m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.animating=true;try{await animatePieceMoves(animationForMove(m,m.color));T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best,reply=T.c.moves({verbose:true}).find(y=>y.from===x.slice(0,2)&&y.to===x.slice(2,4)&&(!x[4]||y.promotion===x[4]));if(reply){await animatePieceMoves(animationForMove(reply,reply.color));T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo explorar esta variante: '+e.message)}finally{T.animating=false}}
+function resetLine(){if(T.animating)return;T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
 function mistakeBank(){try{const v=JSON.parse(localStorage.chessMistakeBank||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
 function saveMistake(item){if(!item.fen||!item.bestUci||item.bestUci==='(none)')return false;const bank=mistakeBank(),id=item.fen+'|'+item.bestUci,old=bank.find(x=>x.id===id);if(old){old.lastSeen=Date.now();old.occurrences=(old.occurrences||1)+1}else bank.push({...item,id,repetitions:0,intervalDays:0,due:Date.now(),occurrences:1});localStorage.chessMistakeBank=JSON.stringify(bank.slice(-250));return true}
 function dueMistakes(){return mistakeBank().filter(x=>(x.due||0)<=Date.now()).sort((a,b)=>(a.due||0)-(b.due||0))}
