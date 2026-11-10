@@ -89,7 +89,7 @@ const requiredFeatures = [
   ['entrenamiento alternativo desde las lecciones', 'function courseTrainingPositions()'],
   ['pista de entrenamiento calculada por Stockfish', "ask(G.g.fen(),'depth 12',20)"],
   ['evaluación colocada debajo de los controles', "(mode==='local'?$('#local'):$('#play')).after(box)"],
-  ['animación no devuelve la pieza a su casilla anterior', "x.piece.style.visibility='hidden'"]
+  ['la pieza se restaura si falla o termina la animación', "x.piece.style.visibility=''"]
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
