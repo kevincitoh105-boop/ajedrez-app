@@ -74,7 +74,9 @@ const requiredFeatures = [
   ['respuesta del rival calculada en directo', "await ask(fen,'depth 10',14)"],
   ['análisis de la jugada del alumno', "const after=await ask(T.c.fen(),'depth 10',14)"],
   ['pistas calculadas para la posición actual', 'async function guidedHint()'],
-  ['seis decisiones interactivas por clase', 'guidedLimit=6']
+  ['seis decisiones interactivas por clase', 'guidedLimit=6'],
+  ['conserva la explicación después de la respuesta rival', 'const prior=T.pendingCoach;T.pendingCoach=null'],
+  ['guarda el diagnóstico de la jugada del alumno', 'T.pendingCoach={title,message,status}']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
