@@ -189,11 +189,26 @@ function tap(sq){if(mode==='theory'&&T.guided){lessonTap(sq);return}if((mode!=='
 function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{const m={...(mode==='theory'&&T.guided?T.pm:G.pm),promotion:t};if(mode==='theory'&&T.guided){T.pm=null;p.hidden=true;lessonMove(m)}else{G.pm=null;p.hidden=true;mode==='train'?trainMove(m):move(m)}};p.append(b)}}
 async function animatePieceMoves(moves){
  const board=$('#board'),flights=[];
- for(const move of moves){const from=Array.from(board.children).find(x=>x.dataset.square===move.from),to=Array.from(board.children).find(x=>x.dataset.square===move.to),piece=from&&from.querySelector('span');if(!piece||!to)continue;
-  const a=piece.getBoundingClientRect(),b=to.getBoundingClientRect(),ghost=piece.cloneNode(true);ghost.classList.add('piece-flight');ghost.style.left=a.left+'px';ghost.style.top=a.top+'px';ghost.style.width=a.width+'px';ghost.style.height=a.height+'px';ghost.style.fontSize=getComputedStyle(piece).fontSize;ghost.style.fontFamily=getComputedStyle(piece).fontFamily;ghost.style.lineHeight='1';document.body.append(ghost);piece.style.visibility='hidden';
-  flights.push({ghost,piece,animation:ghost.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(b.left-a.left)+'px,'+(b.top-a.top)+'px)'}],{duration:210,easing:'cubic-bezier(.2,.75,.25,1)'})});
+ try{
+  for(const move of moves){
+   const from=Array.from(board.children).find(x=>x.dataset.square===move.from),to=Array.from(board.children).find(x=>x.dataset.square===move.to),piece=from&&from.querySelector('span');
+   if(!piece||!to)continue;
+   const a=piece.getBoundingClientRect(),b=to.getBoundingClientRect(),ghost=piece.cloneNode(true);
+   ghost.classList.add('piece-flight');Object.assign(ghost.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px',fontSize:getComputedStyle(piece).fontSize,fontFamily:getComputedStyle(piece).fontFamily,lineHeight:'1'});
+   document.body.append(ghost);piece.style.visibility='hidden';
+   let animation=null;
+   try{if(typeof ghost.animate==='function')animation=ghost.animate([{transform:'translate(0px,0px)'},{transform:'translate('+(b.left-a.left)+'px,'+(b.top-a.top)+'px)'}],{duration:210,easing:'cubic-bezier(.2,.75,.25,1)'})}catch(e){}
+   flights.push({ghost,piece,animation});
+  }
+  const pending=flights.filter(x=>x.animation).map(x=>x.animation.finished.catch(()=>{}));
+  if(pending.length){
+   let timer;
+   try{await Promise.race([Promise.all(pending),new Promise(resolve=>{timer=setTimeout(resolve,450)})])}
+   finally{if(timer)clearTimeout(timer)}
+  }
+ }finally{
+  for(const x of flights){try{if(x.animation&&x.animation.playState!=='finished')x.animation.cancel()}catch(e){}x.ghost.remove();x.piece.style.visibility=''}
  }
- try{await Promise.all(flights.map(x=>x.animation.finished.catch(()=>{})))}finally{for(const x of flights){x.ghost.remove();/* Restaurar siempre el nodo original: el render posterior coloca la pieza en su nueva casilla; si una operación falla, nunca queda invisible ni parece desaparecer. */x.piece.style.visibility=''}}
 }
 function animationForMove(m,color){const moves=[{from:m.from,to:m.to}];if(m.flags&&m.flags.includes('k'))moves.push({from:color==='w'?'h1':'h8',to:color==='w'?'f1':'f8'});if(m.flags&&m.flags.includes('q'))moves.push({from:color==='w'?'a1':'a8',to:color==='w'?'d1':'d8'});return moves}
 async function move(m){if(G.busy||G.over)return;const mover=G.g.turn(),candidate=G.g.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
@@ -457,15 +472,26 @@ function lessonTap(sq){
  const p=T.c.get(sq);T.sel=p&&p.color===T.humanSide?sq:null;render();
 }
 async function lessonMove(m){
- if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver())return;
- const before=T.c.fen(),candidate=T.c.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));if(!candidate)return;
+ if(!T.guided||T.animating||T.guidedCount>=T.guidedLimit||T.c.isGameOver()||T.c.turn()!==T.humanSide)return;
+ const before=T.c.fen(),candidate=T.c.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));
+ if(!candidate)return;
  T.animating=true;T.sel=null;T.arrow=null;
+ let actual=null,afterFen=before;
  try{
-  const best=await ask(before,'depth 10',14);let bestMove=null,bestSan='No disponible';
-  if(best.best&&best.best!=='(none)'){const probe=new Chess(before);try{bestMove=probe.move({from:best.best.slice(0,2),to:best.best.slice(2,4),promotion:best.best[4]});if(bestMove)bestSan=bestMove.san}catch(e){}}
-  await animatePieceMoves(animationForMove(candidate,candidate.color));const actual=T.c.move({from:m.from,to:m.to,promotion:m.promotion});T.guidedCount++;render();
+  /* Primero se ejecuta y muestra la jugada. El análisis del motor nunca debe dejar al alumno esperando con el tablero congelado. */
+  await animatePieceMoves(animationForMove(candidate,candidate.color));
+  actual=T.c.move({from:m.from,to:m.to,promotion:m.promotion});
+  if(!actual)throw new Error('La jugada dejó de ser legal antes de aplicarse.');
+  T.guidedCount++;afterFen=T.c.fen();render();
+  coachMessage('Estoy estudiando tu jugada…','He visto '+actual.san+'. La posición ya está actualizada. Ahora comparo tu decisión con la mejor continuación y después responderá el rival.','Analizando con Stockfish · decisión '+T.guidedCount+' de '+T.guidedLimit);
   if(T.c.isGameOver()){finishGuided();coachMessage('La partida ha terminado',actual.san.includes('#')?'¡Has encontrado jaque mate!':'La posición terminó en '+(T.c.isDraw()?'tablas':'una posición decisiva')+'. Repasa las decisiones que te trajeron hasta aquí.','Clase finalizada');return}
-  const after=await ask(T.c.fen(),'depth 10',14),loss=Math.max(0,Math.round((Number(best.score)||0)+(Number(after.score)||0)));
+  const best=await ask(before,'depth 10',14);let bestMove=null,bestSan='No disponible';
+  if(best.best&&best.best!=='(none)'){
+   const probe=new Chess(before);
+   try{bestMove=probe.move({from:best.best.slice(0,2),to:best.best.slice(2,4),promotion:best.best[4]});if(bestMove)bestSan=bestMove.san}catch(e){}
+  }
+  const after=await ask(afterFen,'depth 10',14);
+  const loss=Math.max(0,Math.round((Number(best.score)||0)+(Number(after.score)||0)));
   let title='Buena decisión',message='';
   if(loss<=20){title='¡Buena elección! '+actual.san;message='Tu jugada mantiene la evaluación prácticamente igual que la mejor continuación que encontró Stockfish. '}
   else if(loss<=65){title='Una alternativa más precisa';message='Tu jugada es legal y jugable, pero Stockfish encuentra una opción algo más precisa: '+bestSan+'. '}
@@ -475,9 +501,11 @@ async function lessonMove(m){
   if(actual.flags.includes('k')||actual.flags.includes('q'))message+='Has enrocado y mejorado la seguridad del rey. ';
   if(['e4','d4','e5','d5'].includes(actual.to))message+='Has intervenido en el centro, ganando espacio y control de casillas. ';
   message+=L[T.lesson][3]+' Ahora observa la respuesta del rival y piensa qué cambió.';
-  render();const status='Decisión '+T.guidedCount+' de '+T.guidedLimit+' · '+(loss<=20?'Muy precisa':loss<=65?'Mejorable':'Revisa la alternativa');T.pendingCoach={title,message,status};coachMessage(title,message,status);
- }catch(e){coachMessage('No se pudo analizar esta jugada',e.message,'La posición se conserva si el movimiento no llegó a aplicarse.')}
- finally{T.animating=false}
+  render();const status='Decisión '+T.guidedCount+' de '+T.guidedLimit+' · '+(loss<=20?'Muy precisa':loss<=65?'Mejorable':'Revisa la alternativa');
+  T.pendingCoach={title,message,status};coachMessage(title,message,status);
+ }catch(e){
+  coachMessage('Pausa del entrenador',actual?'Tu jugada '+actual.san+' se conservó, pero el análisis no pudo terminar: '+e.message:'No se pudo completar el movimiento: '+e.message,'La posición actual se conserva. Puedes continuar o reiniciar la clase.');
+ }finally{T.animating=false}
  await runGuidedReplies();
 }
 async function guidedHint(){
