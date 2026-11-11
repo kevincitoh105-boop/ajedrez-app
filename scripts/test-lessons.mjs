@@ -140,6 +140,7 @@ const requiredFeatures = [
   ['fecha exacta de las partidas', 'function exactDate(ms)'],
   ['nombre editable de la partida', 'Guardar nombre'],
   ['clasificación de todas las jugadas', "loss<=15?'EXCELENTE':loss<=40?'BUENA':loss<=100?'IMPRECISA':'ERROR GRAVE'"],
+  ['tendencia de errores entre las últimas partidas', 'La tendencia reciente mejora.'],
   ['alternativas accesibles desde el registro', 'function showRecordAlternative(id,m)'],
   ['guardado automático después de cada jugada', 'saveCurrentRecord();render()'],
   ['explicación ajedrecística de la solución de Entrenar', 'function explainTrainingMove(item,move)'],
