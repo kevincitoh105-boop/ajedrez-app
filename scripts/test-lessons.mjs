@@ -133,6 +133,7 @@ const requiredFeatures = [
   ['progreso persistente del entrenamiento', 'localStorage.chessTrainingProgress'],
   ['posiciones iniciales temáticas para finales', 'const LESSON_STARTS='],
   ['reproducción de la línea desde la posición temática', 'new Chess(T.startFen)'],
+  ['conteo de respuestas guiadas desde el FEN temático', 'const countLine=new Chess(T.startFen)'],
   ['planes de medio juego de la Caro-Kann', 'caro:{title:'],
   ['planes de medio juego de la Defensa Ortodoxa', 'ortodoxa:{title:'],
   ['planes de medio juego del Sistema Londres', 'londres:{title:'],
