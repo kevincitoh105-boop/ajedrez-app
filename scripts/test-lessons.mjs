@@ -22,6 +22,21 @@ for (const [index, setup] of Object.entries(setupSandbox.__lessonStarts)) {
     catch (error) { throw new Error('Posición temática inválida en lección ' + (+index + 1) + ' | ' + san + ': ' + error.message); }
   }
 }
+const cutsStart = html.indexOf('const LESSON_MIDGAME_CUTS=');
+const cutsEnd = html.indexOf('\nfunction lessonData', cutsStart);
+if (cutsStart < 0 || cutsEnd < 0) throw new Error('No se encontraron los puntos de entrada de las clases de medio juego.');
+const cutsSandbox = {};
+vm.runInNewContext(html.slice(cutsStart, cutsEnd) + '\nglobalThis.__lessonCuts = LESSON_MIDGAME_CUTS;', cutsSandbox);
+for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
+  const moves = parseMoves(lessons[+index][1]), board = new Chess();
+  if (cut < 1 || cut >= moves.length) throw new Error('Corte temático inválido en lección ' + (+index + 1));
+  for (const san of moves.slice(0, cut)) board.move(san);
+  if (board.fen() === new Chess().fen()) throw new Error('La lección no abandonó la posición inicial: ' + lessons[+index][0]);
+  for (const san of moves.slice(cut)) {
+    try { board.move(san); }
+    catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
+  }
+}
 if (lessons.length !== 36) throw new Error('Se esperaban 36 lecciones; encontradas: ' + lessons.length);
 
 function parseMoves(raw) {
