@@ -146,6 +146,7 @@ const requiredFeatures = [
   ['continuación guiada desde la jugada resuelta', 'function beginTrainingDemo()'],
   ['cancelar la continuación guiada', 'function cancelTrainingDemo()'],
   ['progreso persistente del entrenamiento', 'localStorage.chessTrainingProgress'],
+  ['reanuda después del último ejercicio completado', 'saveTrainingProgress(R.items[R.index]===R.current?R.index+1:R.index)'],
   ['posiciones iniciales temáticas para finales', 'const LESSON_STARTS='],
   ['reproducción de la línea desde la posición temática', 'new Chess(T.startFen)'],
   ['conteo de respuestas guiadas desde el FEN temático', 'const countLine=new Chess(T.startFen)'],
