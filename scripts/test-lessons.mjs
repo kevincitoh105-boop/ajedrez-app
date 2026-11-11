@@ -106,7 +106,15 @@ const requiredFeatures = [
   ['no deja saltarse la pregunta de comprensión', 'if(T.animating||T.quizPending)return'],
   ['ajusta el umbral de evaluación según el dominio', 'function adaptiveThreshold(stats)'],
   ['adapta la fuerza del rival según el progreso', 'function adaptiveEngineLevel(stats)'],
-  ['muestra el cuestionario en el panel del entrenador', 'id="coachQuiz" class="coach-quiz"']
+  ['muestra el cuestionario en el panel del entrenador', 'id="coachQuiz" class="coach-quiz"'],
+  ['pestaña de registros', 'id="t5">Registros</button>'],
+  ['sección de registros', 'id="records" hidden'],
+  ['archivo persistente de partidas', 'localStorage.chessRecords'],
+  ['fecha exacta de las partidas', 'function exactDate(ms)'],
+  ['nombre editable de la partida', 'Guardar nombre'],
+  ['clasificación de todas las jugadas', "loss<=15?'EXCELENTE':loss<=40?'BUENA':loss<=100?'IMPRECISA':'ERROR GRAVE'"],
+  ['alternativas accesibles desde el registro', 'function showRecordAlternative(id,m)'],
+  ['guardado automático después de cada jugada', 'saveCurrentRecord();render()']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
