@@ -10,6 +10,18 @@ const source = html.slice(start, end) + '\nglobalThis.__lessons = L;';
 const sandbox = {};
 vm.runInNewContext(source, sandbox);
 const lessons = sandbox.__lessons;
+const setupStart = html.indexOf('const LESSON_STARTS=');
+const setupEnd = html.indexOf('\nconst LESSON_MIDGAME_CUTS', setupStart);
+if (setupStart < 0 || setupEnd < 0) throw new Error('No se encontraron las posiciones temáticas de finales.');
+const setupSandbox = {};
+vm.runInNewContext(html.slice(setupStart, setupEnd) + '\nglobalThis.__lessonStarts = LESSON_STARTS;', setupSandbox);
+for (const [index, setup] of Object.entries(setupSandbox.__lessonStarts)) {
+  const chess = new Chess(setup.fen);
+  for (const san of parseMoves(setup.moves)) {
+    try { chess.move(san); }
+    catch (error) { throw new Error('Posición temática inválida en lección ' + (+index + 1) + ' | ' + san + ': ' + error.message); }
+  }
+}
 if (lessons.length !== 36) throw new Error('Se esperaban 36 lecciones; encontradas: ' + lessons.length);
 
 function parseMoves(raw) {
@@ -114,7 +126,17 @@ const requiredFeatures = [
   ['nombre editable de la partida', 'Guardar nombre'],
   ['clasificación de todas las jugadas', "loss<=15?'EXCELENTE':loss<=40?'BUENA':loss<=100?'IMPRECISA':'ERROR GRAVE'"],
   ['alternativas accesibles desde el registro', 'function showRecordAlternative(id,m)'],
-  ['guardado automático después de cada jugada', 'saveCurrentRecord();render()']
+  ['guardado automático después de cada jugada', 'saveCurrentRecord();render()'],
+  ['explicación ajedrecística de la solución de Entrenar', 'function explainTrainingMove(item,move)'],
+  ['continuación guiada desde la jugada resuelta', 'function beginTrainingDemo()'],
+  ['cancelar la continuación guiada', 'function cancelTrainingDemo()'],
+  ['progreso persistente del entrenamiento', 'localStorage.chessTrainingProgress'],
+  ['posiciones iniciales temáticas para finales', 'const LESSON_STARTS='],
+  ['reproducción de la línea desde la posición temática', 'new Chess(T.startFen)'],
+  ['planes de medio juego de la Caro-Kann', 'caro:{title:'],
+  ['planes de medio juego de la Defensa Ortodoxa', 'ortodoxa:{title:'],
+  ['planes de medio juego del Sistema Londres', 'londres:{title:'],
+  ['selector de planes para posiciones bloqueadas', 'id="planOpening"']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
