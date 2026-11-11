@@ -1,4 +1,7 @@
 name: Build APK
+concurrency:
+  group: maestro-ajedrez-apk
+  cancel-in-progress: false
 on:
   push:
     branches: [main]
