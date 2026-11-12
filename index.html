@@ -80,7 +80,7 @@ small,#plan{color:var(--mut)}
  <div class="row"><button id="pickAlt" class="go">Elegir jugada alternativa en el tablero</button><span id="altBoardStatus">Toca una pieza y luego su casilla de destino.</span><select id="alt" style="display:none"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" style="display:none">Probar y ver respuesta</button></div>
  <div class="row"><button id="backline">Volver a la línea del curso</button></div>
  <p id="plan"></p>
- <div id="middlegamePlans" class="lesson"><div class="tag">Guía práctica · posiciones bloqueadas</div><h3>¿Qué hago cuando no hay una jugada evidente?</h3><p>Elige la apertura y estudia planes distintos según la estructura. No son recetas: cada plan indica qué condiciones deben cumplirse y qué intenta conseguir.</p><select id="planOpening" style="width:100%"><option value="caro">Caro-Kann</option><option value="ortodoxa">Defensa Ortodoxa</option><option value="londres">Sistema Londres</option></select><div id="planContent"></div></div>
+ <div id="middlegamePlans" class="lesson" hidden><div class="tag">Guía práctica · posiciones bloqueadas</div><h3>¿Qué hago cuando no hay una jugada evidente?</h3><p>Elige la apertura y estudia planes distintos según la estructura. No son recetas: cada plan indica qué condiciones deben cumplirse y qué intenta conseguir.</p><select id="planOpening" style="width:100%"><option value="caro">Caro-Kann</option><option value="ortodoxa">Defensa Ortodoxa</option><option value="londres">Sistema Londres</option></select><div id="planContent"></div></div>
 </section>
 <section id="train" hidden>
  <div id="trainSummary" class="lesson"></div>
@@ -488,16 +488,16 @@ const LESSON_STARTS={
 9:{fen:'8/5k2/6p1/6P1/4K3/8/4R3/8 w - - 0 1',moves:'Re3 Kg7 Kf4 Kf7 Re4'}
 };
 
-const PLAN_OPENING_LINES={
- londres:'d4 d5 Nf3 Nf6 Bf4 e6 e3 Bd6 Bd3 O-O O-O c5 c3 Nc6 Nbd2 Qc7 Qe2 b6 e4 dxe4 Nxe4 Nxe4 Qxe4 g6 Rfe1 Bb7',
- caro:'e4 c6 d4 d5 e5 Bf5 Nf3 e6 Be2 c5 O-O Nc6 c3 Qb6 Nbd2 cxd4 cxd4 Nge7 Nb3 Ng6 Be3 Bb4',
- ortodoxa:'d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O Nf3 h6 Bh4 b6 cxd5 exd5 Bd3 Bb7 O-O Nbd7 Rc1 c5 dxc5 bxc5 Qe2 Ne4'
+const PLAN_POSITION_SOURCES={
+ londres:[{lesson:27,cut:8},{lesson:14,cut:7},{lesson:23,cut:8},{lesson:24,cut:10},{lesson:13,cut:8},{lesson:1,cut:8},{lesson:26,cut:8},{lesson:15,cut:9},{lesson:13,cut:10},{lesson:32,cut:9}],
+ caro:[{lesson:18,cut:8},{lesson:18,cut:7},{lesson:19,cut:8},{lesson:17,cut:8},{lesson:16,cut:8},{lesson:18,cut:10},{lesson:16,cut:10},{lesson:17,cut:10},{lesson:18,cut:12},{lesson:31,cut:8}],
+ ortodoxa:[{lesson:12,cut:7},{lesson:21,cut:8},{lesson:12,cut:8},{lesson:21,cut:10},{lesson:12,cut:10},{lesson:21,cut:11},{lesson:12,cut:9},{lesson:21,cut:12},{lesson:13,cut:9},{lesson:12,cut:12}]
 };
 for(const meta of PLAN_CLASS_META){
- const tokens=parseTheoryMoves(PLAN_OPENING_LINES[meta.key]);
- const cut=Math.min(6+meta.planIndex,Math.max(0,tokens.length-4));
+ const source=PLAN_POSITION_SOURCES[meta.key][meta.planIndex],tokens=parseTheoryMoves(L[source.lesson][1]);
+ const cut=Math.min(source.cut,tokens.length-2);
  const board=new Chess();let valid=0;
- for(const san of tokens.slice(0,cut)){try{if(!board.move(san))break;valid++}catch(e){break}}
+ for(const san of tokens.slice(0,cut)){board.move(san);valid++}
  LESSON_STARTS[meta.index]={fen:board.fen(),moves:tokens.slice(valid).join(' ')};
 }
 const LESSON_MIDGAME_CUTS={6:8,7:8,10:8,11:8,15:8,20:8,21:8,23:8,24:8,25:8,27:8,31:8,32:8,33:4,34:4,35:4};
