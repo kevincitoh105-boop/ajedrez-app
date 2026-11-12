@@ -2,10 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const source = path.join('assets', 'app-icon.png');
-const foreground = path.join('assets', 'app-icon-foreground.png');
 const res = path.join('android', 'app', 'src', 'main', 'res');
 if (!fs.existsSync(source)) throw new Error('Falta assets/app-icon.png');
-if (!fs.existsSync(foreground)) throw new Error('Falta assets/app-icon-foreground.png');
 if (!fs.existsSync(res)) throw new Error('No existe el directorio de recursos Android: ' + res);
 
 for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
@@ -13,7 +11,7 @@ for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
   fs.mkdirSync(dir, { recursive: true });
   fs.copyFileSync(source, path.join(dir, 'ic_launcher.png'));
   fs.copyFileSync(source, path.join(dir, 'ic_launcher_round.png'));
-  fs.copyFileSync(foreground, path.join(dir, 'ic_launcher_foreground.png'));
+  fs.copyFileSync(source, path.join(dir, 'ic_launcher_foreground.png'));
 }
 const adaptive = path.join(res, 'mipmap-anydpi-v26');
 fs.mkdirSync(adaptive, { recursive: true });
