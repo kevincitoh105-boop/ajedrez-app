@@ -126,7 +126,7 @@ const requiredFeatures = [
   ['pista de entrenamiento calculada por Stockfish', "ask(G.g.fen(),'depth 12',20)"],
   ['evaluación colocada debajo de los controles', "(mode==='local'?$('#local'):$('#play')).after(box)"],
   ['la pieza se restaura si falla o termina la animación', "x.piece.style.visibility=''"],
-  ['permite reconsiderar una mala jugada y volver a intentarla', "T.c.load(before);T.arrow={from:bestMove.from,to:bestMove.to,kind:'wrong'}"],
+  ['evalúa una mala jugada sin forzar la alternativa', 'const needsReview=loss>threshold;'],
   ['registra intentos y progreso por lección', 'localStorage.chessLessonStats'],
   ['explica el objetivo estratégico de cada clase', "'Objetivo de esta clase: '+L[T.lesson][2]"],
   ['hace preguntas para comprobar la comprensión', 'function showLessonQuiz()'],
