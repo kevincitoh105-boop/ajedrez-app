@@ -63,11 +63,13 @@ jobs:
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)"
           test -n "$AAPT"
           "$AAPT" dump badging android/app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-badging.txt
+          grep -F "package: name='com.ajedrez.maestro'" /tmp/apk-badging.txt
           grep -E "^application:.*icon='res/.*ic_launcher" /tmp/apk-badging.txt
           "$AAPT" dump resources android/app/build/outputs/apk/debug/app-debug.apk | grep -E "ic_launcher(_round|_foreground)?"
+          cp android/app/build/outputs/apk/debug/app-debug.apk Chess-Master.apk
       - name: Verify Stockfish is inside APK
         run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'assets/public/engine/.*\.wasm'
       - uses: actions/upload-artifact@v5
         with:
-          name: maestro-ajedrez-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Chess-Master
+          path: Chess-Master.apk
