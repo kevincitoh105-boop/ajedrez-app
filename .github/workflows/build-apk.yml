@@ -51,6 +51,8 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+      - name: Install image processor for Android launcher icons
+        run: npm install --no-save sharp
       - name: Apply custom Android launcher icon
         run: node scripts/apply-android-branding.js
       - name: Set increasing Android version code
