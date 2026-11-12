@@ -87,9 +87,9 @@ for (const [lessonIndex, lesson] of lessons.entries()) {
   const chess = planSetup ? new Chess(planSetup.fen) : new Chess();
   // Las 30 clases de medio juego guardan sus jugadas en LESSON_STARTS,
   // no en L[index][1], porque su posición inicial es temática.
-  const moves = parseMoves(lesson[1]).length
-    ? parseMoves(lesson[1])
-    : planSetup ? parseMoves(planSetup.moves) : [];
+  // Si la aplicación define un FEN y una línea propios para la lección,
+  // esos datos tienen prioridad sobre la línea PGN general de L[index].
+  const moves = planSetup ? parseMoves(planSetup.moves) : parseMoves(lesson[1]);
   if (!moves.length) throw new Error('Lección sin jugadas: ' + lesson[0]);
   for (let i = 0; i < moves.length; i++) {
     const san = moves[i];
