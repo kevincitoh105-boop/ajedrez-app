@@ -13,7 +13,12 @@ const lessons = sandbox.__lessons;
 const setupStart = html.indexOf('function parseTheoryMoves');
 const setupEnd = html.indexOf('\nconst LESSON_MIDGAME_CUTS', setupStart);
 if (setupStart < 0 || setupEnd < 0) throw new Error('No se encontraron las posiciones temáticas de las clases.');
-const planSandbox = { Chess, L: lessons, MIDGAME_PLANS: plansSandbox.__plans };
+const planDefinitionsStart = html.indexOf('const MIDGAME_PLANS=');
+const planDefinitionsEnd = html.indexOf('\nfunction renderMiddlegamePlans', planDefinitionsStart);
+if (planDefinitionsStart < 0 || planDefinitionsEnd < 0) throw new Error('No se encontraron los 30 planes.');
+const planDefinitionsSandbox = {};
+vm.runInNewContext(html.slice(planDefinitionsStart, planDefinitionsEnd) + '\nglobalThis.__plans = MIDGAME_PLANS;', planDefinitionsSandbox);
+const planSandbox = { Chess, L: lessons, MIDGAME_PLANS: planDefinitionsSandbox.__plans };
 vm.runInNewContext(html.slice(setupStart, setupEnd) + '\nglobalThis.__planSetup = {LESSON_STARTS, PLAN_CLASS_META};', planSandbox);
 for (const meta of planSandbox.__planSetup.PLAN_CLASS_META) {
   const setup = planSandbox.__planSetup.LESSON_STARTS[meta.index];
