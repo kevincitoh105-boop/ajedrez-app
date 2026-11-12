@@ -10,18 +10,25 @@ const source = html.slice(start, end) + '\nglobalThis.__lessons = L;';
 const sandbox = {};
 vm.runInNewContext(source, sandbox);
 const lessons = sandbox.__lessons;
-const setupStart = html.indexOf('const LESSON_STARTS=');
+const setupStart = html.indexOf('function parseTheoryMoves');
 const setupEnd = html.indexOf('\nconst LESSON_MIDGAME_CUTS', setupStart);
-if (setupStart < 0 || setupEnd < 0) throw new Error('No se encontraron las posiciones temáticas de finales.');
-const setupSandbox = {};
-vm.runInNewContext(html.slice(setupStart, setupEnd) + '\nglobalThis.__lessonStarts = LESSON_STARTS;', setupSandbox);
-for (const [index, setup] of Object.entries(setupSandbox.__lessonStarts)) {
+if (setupStart < 0 || setupEnd < 0) throw new Error('No se encontraron las posiciones temáticas de las clases.');
+const planSandbox = { Chess, L: lessons, MIDGAME_PLANS: plansSandbox.__plans };
+vm.runInNewContext(html.slice(setupStart, setupEnd) + '\nglobalThis.__planSetup = {LESSON_STARTS, PLAN_CLASS_META};', planSandbox);
+for (const meta of planSandbox.__planSetup.PLAN_CLASS_META) {
+  const setup = planSandbox.__planSetup.LESSON_STARTS[meta.index];
+  if (!setup) throw new Error('Falta posición de tablero para ' + meta.label + ' · plan ' + (meta.planIndex + 1));
   const chess = new Chess(setup.fen);
   for (const san of parseMoves(setup.moves)) {
     try { chess.move(san); }
-    catch (error) { throw new Error('Posición temática inválida en lección ' + (+index + 1) + ' | ' + san + ': ' + error.message); }
+    catch (error) { throw new Error('Posición/continuación inválida en ' + meta.label + ' · plan ' + (meta.planIndex + 1) + ' | ' + san + ': ' + error.message); }
   }
 }
+if (planSandbox.__planSetup.PLAN_CLASS_META.length !== 30)
+  throw new Error('Se esperaban 30 clases visuales de medio juego.');
+const distinctPlanPositions = new Set(planSandbox.__planSetup.PLAN_CLASS_META.map(meta => planSandbox.__planSetup.LESSON_STARTS[meta.index].fen));
+if (distinctPlanPositions.size < 20)
+  throw new Error('Demasiadas clases comparten la misma posición de tablero: ' + distinctPlanPositions.size);
 const cutsStart = html.indexOf('const LESSON_MIDGAME_CUTS=');
 const cutsEnd = html.indexOf('\nfunction lessonData', cutsStart);
 if (cutsStart < 0 || cutsEnd < 0) throw new Error('No se encontraron los puntos de entrada de las clases de medio juego.');
