@@ -4,6 +4,7 @@ fs.rmSync(out, { recursive: true, force: true });
 for (const d of ['lib', 'engine']) fs.mkdirSync(path.join(out, d), { recursive: true });
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 if (fs.existsSync('assets/coach.webp')) fs.copyFileSync('assets/coach.webp', path.join(out, 'assets/coach.webp'));
+if (fs.existsSync('assets/home-background.webp')) fs.copyFileSync('assets/home-background.webp', path.join(out, 'assets/home-background.webp'));
 fs.copyFileSync('index.html', path.join(out, 'index.html'));
 
 const walk = d => !fs.existsSync(d) ? [] : fs.readdirSync(d, { withFileTypes: true }).flatMap(e =>
