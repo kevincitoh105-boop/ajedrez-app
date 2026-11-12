@@ -527,7 +527,7 @@ function lessonTap(sq){
  const p=T.c.get(sq);T.sel=p&&p.color===T.humanSide?sq:null;render();
 }
 async function lessonMove(m){
- if(!T.guided||T.animating||T.quizPending||T.guidedCount>=T.guidedLimit||T.c.isGameOver()||T.c.turn()!==T.humanSide)return;
+ if(!T.guided||T.animating||T.quizPending||T.c.isGameOver()||T.c.turn()!==T.humanSide)return;
  const before=T.c.fen(),candidate=T.c.moves({square:m.from,verbose:true}).find(x=>x.to===m.to&&(!m.promotion||x.promotion===m.promotion));
  if(!candidate)return;
  let expectedSan=null;if(T.guidedLineActive&&T.guidedLineIndex<T.m.length){const expectedBoard=new Chess(before);try{const expected=expectedBoard.move(T.m[T.guidedLineIndex]);if(expected&&expected.color===T.humanSide)expectedSan=expected.san;else T.guidedLineActive=false}catch(e){T.guidedLineActive=false}}
@@ -545,22 +545,19 @@ async function lessonMove(m){
   const after=await ask(afterFen,'depth 12',16);
   const loss=Math.max(0,Math.round((Number(best.score)||0)+(Number(after.score)||0)));
   const stats=lessonStats(),threshold=adaptiveThreshold(stats);
-  if(loss>threshold&&T.reviewAttempts<2&&bestMove){
-   T.reviewAttempts++;stats.retries=(stats.retries||0)+1;saveLessonStats(stats);
-   await animatePieceMoves(animationForMove({...actual,from:actual.to,to:actual.from},actual.color));
-   T.c.load(before);T.arrow={from:bestMove.from,to:bestMove.to,kind:'wrong'};render();
-   coachMessage('Vamos a reconsiderarla','Tu jugada '+actual.san+' permite '+bestSan+'. No avanzaremos todavía. Hemos vuelto a la posición anterior: intenta encontrar una alternativa que cumpla el objetivo de esta clase. Pista: '+L[T.lesson][3],'Segundo intento · '+(T.reviewAttempts)+'/2 · La lección espera tu decisión');
-   return;
-  }
+  const needsReview=loss>threshold;
   T.guidedCount++;if(T.guidedLineActive&&expectedSan===actual.san)T.guidedLineIndex++;else T.guidedLineActive=false;
   const success=loss<=threshold;stats.decisions=(stats.decisions||0)+1;if(success)stats.solid=(stats.solid||0)+1;else stats.needsReview=(stats.needsReview||0)+1;saveLessonStats(stats);T.reviewAttempts=0;
-  let title=success?'Buena decisión':'Una jugada para estudiar',message=success?'Tu movimiento mantiene una evaluación razonable. ':'La alternativa más fuerte era '+bestSan+'. ';
+  let title=success?'Buena decisión':'Una jugada para estudiar',message=success?'Tu movimiento mantiene una evaluación razonable. ':'Tu elección concede una mejora al rival, pero la partida continúa y la decisión fue tuya. ';
+  const ownReason=explainTrainingMove({fen:before},actual),bestReason=bestMove?explainTrainingMove({fen:before},bestMove):'No se pudo obtener una alternativa legal fiable.';
+  if(bestMove&&actual.san!==bestSan)message+='La sugerencia del entrenador era '+bestSan+': '+bestReason+' Tu jugada '+actual.san+' consigue lo siguiente: '+ownReason+' ';
+  else message+='Idea ajedrecística de tu jugada: '+ownReason+' ';
   if(actual.captured)message+='Has capturado una pieza: comprueba si queda defendida y qué cambia en el balance. ';
   if(actual.san.includes('+'))message+='Has dado jaque: busca qué ganas después de la respuesta. ';
   if(actual.flags.includes('k')||actual.flags.includes('q'))message+='Has enrocado y mejorado la seguridad del rey. ';
   if(['e4','d4','e5','d5'].includes(actual.to))message+='Has intervenido en el centro, ganando espacio y control. ';
   message+='Objetivo de esta clase: '+L[T.lesson][2]+' Idea clave: '+L[T.lesson][3];
-  T.pendingCoach={title,message,status:'Decisión '+T.guidedCount+' de '+T.guidedLimit+' · '+(success?'Concepto encaminado':'Análisis guardado')};coachMessage(title,message,T.pendingCoach.status);render();
+  T.pendingCoach={title,message,status:'Decisión '+T.guidedCount+' · '+(success?'Concepto encaminado':'Análisis guardado')};coachMessage(title,message,T.pendingCoach.status);render();
  }catch(e){
   coachMessage('Pausa del entrenador',actual?'Tu jugada '+actual.san+' se conservó, pero el análisis no pudo terminar: '+e.message:'No se pudo completar el movimiento: '+e.message,'La posición actual se conserva. Puedes continuar o reiniciar la clase.');
  }finally{T.animating=false}
