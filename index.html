@@ -241,10 +241,11 @@ async function move(m){if(G.busy||G.over)return;const mover=G.g.turn(),candidate
 async function diagnoseMove(before,afterFen,mover,san,uci){
  if(evalBusy)return;
  evalBusy=true;
+ const analysisDepth=mode==='local'?8:14;
  try{
   const statusBox=mode==='local'?$('#analysisStatusLocal'):$('#analysisStatus');statusBox.hidden=false;statusBox.textContent='Evaluando tu jugada: calculando la mejor alternativa y las amenazas…';
-  const best=await ask(before,'depth 14',20);
-  const playedEval=await ask(afterFen,'depth 14',20);
+  const best=await ask(before,'depth '+analysisDepth,20);
+  const playedEval=await ask(afterFen,'depth '+analysisDepth,20);
   const playedPerspective=-playedEval.score;
   let bestPerspective=playedPerspective,bestSan='No disponible',bestMove=null,bestAfter=null;
   if(best.best&&best.best!=='(none)'){
@@ -252,7 +253,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
    try{
     bestMove=reference.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});
     bestSan=bestMove.san;
-    const afterBest=await ask(reference.fen(),'depth 14',20);
+    const afterBest=await ask(reference.fen(),'depth '+analysisDepth,20);
     bestPerspective=-afterBest.score;
     bestAfter=reference.fen();
    }catch(e){}
