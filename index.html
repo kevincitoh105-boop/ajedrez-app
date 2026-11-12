@@ -503,20 +503,20 @@ const LESSON_STARTS={
 
 
 /* Posiciones didácticas del video: se construyen desde líneas legales conocidas.
-   Los índices 70 y 71 usan FEN simplificados, expresamente etiquetados como ejercicios. */
+   Los índices 40 y 41 usan FEN simplificados, expresamente etiquetados como ejercicios. */
 const VIDEO_POSITION_SOURCES=[
- {index:66,line:'d4 d5 Bf4 Nf6 e3 e6 Nf3 c5 c3 Nc6 Nbd2 Bd6 Bg3 O-O',cut:14,moves:'Bd3 cxd4 exd4 Qb6 Qb3'},
- {index:67,line:'e4 c6 d4 d5 e5 Bf5 Nf3 e6 Be2 c5 O-O Nc6 c3',cut:13,moves:'Qb6 h3 h5 Nbd2 h4'},
- {index:68,line:'d4 d5 Bf4 Nf6 e3 c5 c3 Nc6 Nf3 Qb6',cut:10,moves:'Qb3 c4 Qxb6 axb6'},
- {index:69,line:'e4 c6 d4 d5 exd5 cxd5 c4 Nf6 Nc3 e6 Nf3 Bb4 Bd3 O-O O-O Nc6',cut:16,moves:'Re1 Re8 Bg5'}
+ {index:36,line:'d4 d5 Bf4 Nf6 e3 e6 Nf3 c5 c3 Nc6 Nbd2 Bd6 Bg3 O-O',cut:14,moves:'Bd3 cxd4 exd4 Qb6 Qb3'},
+ {index:37,line:'e4 c6 d4 d5 e5 Bf5 Nf3 e6 Be2 c5 O-O Nc6 c3',cut:13,moves:'Qb6 h3 h5 Nbd2 h4'},
+ {index:38,line:'d4 d5 Bf4 Nf6 e3 c5 c3 Nc6 Nf3 Qb6',cut:10,moves:'Qb3 c4 Qxb6 axb6'},
+ {index:39,line:'e4 c6 d4 d5 exd5 cxd5 c4 Nf6 Nc3 e6 Nf3 Bb4 Bd3 O-O O-O Nc6',cut:16,moves:'Re1 Re8 Bg5'}
 ];
 for(const source of VIDEO_POSITION_SOURCES){
  const board=new Chess();
  for(const san of parseTheoryMoves(source.line).slice(0,source.cut))board.move(san);
  LESSON_STARTS[source.index]={fen:board.fen(),moves:source.moves};
 }
-LESSON_STARTS[70]={fen:'7k/8/8/8/8/8/8/K2Q4 w - - 0 1',moves:'Qd4+ Kg8 Qd5+ Kh8 Qh5+ Kg8'};
-LESSON_STARTS[71]={fen:'8/6k1/8/2P5/8/8/4K3/8 w - - 0 1',moves:'Kd3 Kf6 Kc4 Ke6 Kb5 Kd5 c6 Kd6'};
+LESSON_STARTS[40]={fen:'7k/8/8/8/8/8/8/K2Q4 w - - 0 1',moves:'Qd4+ Kg8 Qd5+ Kh8 Qh5+ Kg8'};
+LESSON_STARTS[41]={fen:'8/6k1/8/2P5/8/8/4K3/8 w - - 0 1',moves:'Kd3 Kf6 Kc4 Ke6 Kb5 Kd5 c6 Kd6'};
 
 const PLAN_POSITION_SOURCES={
  londres:[{lesson:27,cut:8},{lesson:14,cut:7},{lesson:23,cut:8},{lesson:24,cut:10},{lesson:13,cut:8},{lesson:1,cut:8},{lesson:26,cut:8},{lesson:15,cut:9},{lesson:13,cut:10},{lesson:32,cut:9}],
