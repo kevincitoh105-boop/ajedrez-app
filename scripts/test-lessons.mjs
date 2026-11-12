@@ -39,6 +39,29 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
 }
 if (lessons.length !== 36) throw new Error('Se esperaban 36 lecciones; encontradas: ' + lessons.length);
 
+const plansStart = html.indexOf('const MIDGAME_PLANS=');
+const plansEnd = html.indexOf('\nfunction renderMiddlegamePlans', plansStart);
+if (plansStart < 0 || plansEnd < 0) throw new Error('No se encontró la guía de medio juego.');
+const plansSandbox = {};
+vm.runInNewContext(html.slice(plansStart, plansEnd) + '\nglobalThis.__plans = MIDGAME_PLANS;', plansSandbox);
+for (const opening of ['caro', 'ortodoxa', 'londres']) {
+  const count = plansSandbox.__plans[opening]?.plans?.length || 0;
+  if (count !== 10) throw new Error('Se esperaban 10 planes de medio juego para ' + opening + '; encontrados: ' + count);
+}
+if (!html.includes('id="home"') || !html.includes('data-enter="records"'))
+  throw new Error('Falta la portada inicial con selector de secciones.');
+if (!html.includes("mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()"))
+  throw new Error('El tablero local no conserva una orientación fija.');
+if (html.includes("T.c.load(before);T.arrow={from:bestMove.from"))
+  throw new Error('El entrenador todavía obliga a repetir una jugada.');
+const demoStart = html.indexOf('async function nextTrainingDemoMove()');
+const demoEnd = html.indexOf('async function trainingDemoMove(', demoStart);
+if (demoStart < 0 || demoEnd < 0 || html.slice(demoStart, demoEnd).includes('G.g.move('))
+  throw new Error('La continuación debe sugerir con flecha y esperar la decisión del usuario.');
+if (!html.includes("if(moveReview)moveReview.hidden=mode!=='play'&&mode!=='local'"))
+  throw new Error('Los mensajes de evaluación no se ocultan en teoría, entrenar y registros.');
+
+
 function parseMoves(raw) {
   return String(raw || '').replace(/\{[^}]*\}/g, ' ').replace(/;[^\n]*/g, ' ').replace(/\$\d+/g, ' ')
     .split(/\s+/).map(token => token.replace(/^\d+\.(?:\.\.)?/, '').replace(/[!?]+$/, ''))
