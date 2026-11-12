@@ -31,7 +31,7 @@ fs.writeFileSync(path.join(values, 'ic_launcher_background.xml'),
 const manifest = path.join('android', 'app', 'src', 'main', 'AndroidManifest.xml');
 if (!fs.existsSync(manifest)) throw new Error('No existe AndroidManifest.xml');
 let manifestText = fs.readFileSync(manifest, 'utf8');
-const appTag = manifestText.match(/<application\\b[^>]*>/);
+const appTag = manifestText.match(/<application\b[^>]*>/);
 if (!appTag) throw new Error('No se encontró la etiqueta <application> en AndroidManifest.xml');
 let app = appTag[0];
 for (const attr of ['icon', 'roundIcon']) {
@@ -41,7 +41,7 @@ for (const attr of ['icon', 'roundIcon']) {
 }
 manifestText = manifestText.replace(appTag[0], app);
 fs.writeFileSync(manifest, manifestText);
-if (!/android:icon="@mipmap\\/ic_launcher"/.test(app) || !/android:roundIcon="@mipmap\\/ic_launcher_round"/.test(app)) {
+if (!/android:icon="@mipmap\/ic_launcher"/.test(app) || !/android:roundIcon="@mipmap\/ic_launcher_round"/.test(app)) {
   throw new Error('El manifest no quedó enlazado a los iconos personalizados');
 }
 for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
