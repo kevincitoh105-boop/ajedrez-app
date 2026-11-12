@@ -53,7 +53,7 @@ if (lessons.length !== 72) throw new Error('Se esperaban 72 lecciones (36 origin
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
-  if (!lessons[i][7]?.includes('no') && !lessons[i][7]?.includes('No'))
+  if (!lessons[i][6]?.toLowerCase().includes('no '))
     throw new Error('Falta aclarar la precisión de la posición didáctica: ' + lessons[i][0]);
 }
 
