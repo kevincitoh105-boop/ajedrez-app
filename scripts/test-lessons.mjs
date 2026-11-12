@@ -75,7 +75,7 @@ if (!html.includes("className='coord rank'") || !html.includes("className='coord
   throw new Error('Faltan las coordenadas del tablero.');
 if (!html.includes("screenRow===7") || !html.includes("screenCol===0"))
   throw new Error('Las coordenadas no están asociadas a los bordes visibles del tablero.');
-if (!html.includes("f:mode==='local'?G.g.turn()==='b':mode==='train'?G.trainSide==='b':flipped()"))
+if (!html.includes("f:mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()"))
   throw new Error('La orientación del tablero no respeta el turno local ni el color del ejercicio.');
 const localGame = new Chess();
 if (localGame.turn() !== 'w') throw new Error('La partida local debe empezar con blancas abajo.');
@@ -166,4 +166,4 @@ if (moduleStart < 0 || moduleEnd < 0) throw new Error('No se encontró el módul
 const inline = html.slice(moduleStart + '<script type="module">'.length, moduleEnd)
   .replace(/^\s*import\s+\{\s*Chess\s*\}\s+from\s+['"][^'"]+['"];?\s*/, '');
 new vm.Script(inline, { filename: 'index-inline.js' });
-console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas; orientación local alternada; animaciones; entrenador espaciado; revisión de partidas; sintaxis JavaScript validada.');
+console.log('OK: ' + lessons.length + ' lecciones, ' + totalMoves + ' jugadas legales; reproducción de todos los prefijos; test de nivel con ambos colores; coordenadas; orientación fija para dos jugadores; animaciones; entrenador espaciado; revisión de partidas; sintaxis JavaScript validada.');
