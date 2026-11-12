@@ -49,7 +49,7 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 36) throw new Error('Se esperaban 36 lecciones; encontradas: ' + lessons.length);
+if (lessons.length !== 66) throw new Error('Se esperaban 66 lecciones (36 originales + 30 planes); encontradas: ' + lessons.length);
 
 const plansStart = html.indexOf('const MIDGAME_PLANS=');
 const plansEnd = html.indexOf('\nfunction renderMiddlegamePlans', plansStart);
