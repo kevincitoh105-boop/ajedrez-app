@@ -49,13 +49,36 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 72) throw new Error('Se esperaban 72 lecciones (36 originales + 6 ejercicios del video + 30 planes); encontradas: ' + lessons.length);
+if (lessons.length !== 74) throw new Error('Se esperaban 74 lecciones (36 originales + 6 del video + 2 de la partida de Morphy + 30 planes); encontradas: ' + lessons.length);
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
   if (!lessons[i][6]?.toLowerCase().includes('no '))
     throw new Error('Falta aclarar la precisión de la posición didáctica: ' + lessons[i][0]);
 }
+
+const operaLesson = lessons[42], operaPuzzle = lessons[43];
+if (!operaLesson?.[0]?.includes('Morphy') || !operaLesson[1]?.includes('17.Rd8#'))
+  throw new Error('Falta la partida histórica completa de Morphy.');
+if (!operaLesson[3]?.includes('8.Nc3!') || !operaLesson[3]?.includes('3...Nf6') || !operaLesson[3]?.includes('10...Qb4+'))
+  throw new Error('La clase histórica no explica la jugada crítica y sus alternativas documentadas.');
+if (!operaLesson[6]?.includes('chesshistory.com') || !operaLesson[6]?.includes('wikipedia.org'))
+  throw new Error('La partida histórica no incluye sus fuentes de verificación.');
+const operaReplay = new Chess();
+for (const san of parseMoves(operaLesson[1])) operaReplay.move(san);
+if (operaReplay.history().length !== 33 || !operaReplay.isCheckmate())
+  throw new Error('La partida de la Ópera debe reproducir 33 medias jugadas legales y terminar en mate.');
+if (!operaPuzzle?.[0]?.includes('Desafío interactivo') || !operaPuzzle[1]?.includes('16.Qb8+'))
+  throw new Error('Falta el ejercicio interactivo del sacrificio de dama.');
+const operaPuzzleSetup = planSandbox.__planSetup.LESSON_STARTS[43];
+if (!operaPuzzleSetup) throw new Error('No se generó la posición histórica después de 15...Nxd7.');
+const operaPuzzleMoves = parseMoves(operaPuzzleSetup.moves);
+if (operaPuzzleMoves.join(' ') !== 'Qb8+ Nxb8 Rd8#')
+  throw new Error('La combinación final de Morphy no coincide con la partida documentada.');
+const operaPuzzleBoard = new Chess(operaPuzzleSetup.fen);
+for (const san of operaPuzzleMoves) operaPuzzleBoard.move(san);
+if (!operaPuzzleBoard.isCheckmate())
+  throw new Error('El ejercicio de Morphy no termina en jaque mate legal.');
 
 const plansStart = html.indexOf('const MIDGAME_PLANS=');
 const plansEnd = html.indexOf('\nfunction renderMiddlegamePlans', plansStart);
