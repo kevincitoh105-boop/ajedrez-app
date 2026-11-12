@@ -340,7 +340,18 @@ function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;
 function tabs(){$('#home').hidden=mode!=='home';$('#modeNav').hidden=mode==='home';$('#st').hidden=mode==='home';$('#pr').hidden=mode==='home';$('#board').hidden=mode==='home';$('#theoryNav').hidden=mode==='home'||mode!=='theory'||T.guided;$('#mv').hidden=mode!=='play'&&mode!=='local';$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#records').hidden=mode!=='records';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train'&&mode!=='records';$('#coachPanel').dataset.mode=mode;const actions=$('#trainActions'),tools=$('#coachPanel .coach-tools');if(actions&&tools){if(mode==='train')tools.append(actions);else $('#train').append(actions)}$('#reviewResults').hidden=mode!=='play'&&mode!=='local';const moveReview=$('#move-review');if(moveReview)moveReview.hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';$('#t5').className=mode==='records'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
-function showLesson(){const l=L[T.lesson];progressText();renderMiddlegamePlans();const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';$('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>'+phaseGuide(l);renderLessonStep();$('#plan').textContent='Curso guiado: avanza una jugada cada vez, lee su explicación y luego prueba una alternativa legal. El motor responderá para que compares los planes.'}
+function showLesson(){
+ const l=L[T.lesson],meta=PLAN_CLASS_META.find(x=>x.index===T.lesson);progressText();$('#middlegamePlans').hidden=true;$('#plan').hidden=!!meta;$('#lesson').hidden=!!meta;$('#lessonStep').hidden=!!meta;
+ if(meta){
+  coachMessage(meta.label+' · Plan '+(meta.planIndex+1)+'/10',meta.plan[1]+'\n\nSecuencia orientativa: '+meta.plan[2]+'\n\nEstudia la posición del tablero. Pulsa Pista para ver una flecha, pero la decisión de qué jugar es tuya.','Clase visual · Plan '+(meta.planIndex+1)+' de 10 · '+meta.label);
+  $('#lesson').textContent='';$('#lessonStep').textContent='';
+ }else{
+  const source=l[6]?'<p><b>Vídeo fuente de PupiloChess:</b> '+l[6]+'</p>':'';
+  $('#lesson').innerHTML='<div class="tag">'+l[5]+'</div><h3>'+l[0]+'</h3><p><b>Qué vas a aprender:</b> '+l[2]+'</p><p><b>Idea estratégica:</b> '+l[3]+'</p><p><b>Error típico:</b> '+l[4]+'</p>'+source+'<p><b>Regla para principiantes:</b> no memorices solo el orden. Entiende qué amenaza cada jugada, qué pieza mejora y qué respuesta del rival debes esperar.</p>'+phaseGuide(l);
+  renderLessonStep();$('#plan').textContent='Curso guiado: avanza jugada por jugada y prueba alternativas legales.';
+  coachMessage('Aprende jugando',l[2]+' '+l[3],'Clase '+(T.lesson+1)+' de '+L.length);
+ }
+}
 
 function theoryBlackPerspective(){return /Caro-Kann|Defensa Ortodoxa|Ortodoxa/i.test(L[T.lesson][0]+' '+L[T.lesson][5])}
 function phaseGuide(l){
@@ -461,10 +472,34 @@ function parseTheoryMoves(raw){
  }
  return out;
 }
+
+const PLAN_CLASS_META=[];
+for(const key of ['londres','caro','ortodoxa']){
+ const group=MIDGAME_PLANS[key];
+ group.plans.forEach((p,i)=>{
+  const label=key==='londres'?'Sistema Londres':key==='caro'?'Caro-Kann':'Defensa Ortodoxa';
+  const strategic='Plan de referencia: '+p[2]+' En esta clase observa la posición, identifica la ruptura o mejora de piezas y decide qué jugada legal cumple el objetivo.';
+  L.push(['Clase de plan '+(i+1)+'/10 · '+label+' · '+p[0],'',p[1],strategic,'No ejecutes la secuencia de memoria. Comprueba primero las amenazas, la seguridad de los reyes y si la ruptura está tácticamente preparada.','Medio juego · '+label]);
+  PLAN_CLASS_META.push({index:L.length-1,key,planIndex:i,label,plan:p});
+ });
+}
 const LESSON_STARTS={
 8:{fen:'8/8/8/3k4/8/4K3/4P3/8 w - - 0 1',moves:'Kd3 Kc5 e4 Kd6 Kd4 Ke6 e5 Kf5 Kd5'},
 9:{fen:'8/5k2/6p1/6P1/4K3/8/4R3/8 w - - 0 1',moves:'Re3 Kg7 Kf4 Kf7 Re4'}
 };
+
+const PLAN_OPENING_LINES={
+ londres:'d4 d5 Nf3 Nf6 Bf4 e6 e3 Bd6 Bd3 O-O O-O c5 c3 Nc6 Nbd2 Qc7 Qe2 b6 e4 dxe4 Nxe4 Nxe4 Qxe4 g6 Rfe1 Bb7',
+ caro:'e4 c6 d4 d5 e5 Bf5 Nf3 e6 Be2 c5 O-O Nc6 c3 Qb6 Nbd2 cxd4 cxd4 Nge7 Nb3 Ng6 Be3 Bb4',
+ ortodoxa:'d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O Nf3 h6 Bh4 b6 cxd5 exd5 Bd3 Bb7 O-O Nbd7 Rc1 c5 dxc5 bxc5 Qe2 Ne4'
+};
+for(const meta of PLAN_CLASS_META){
+ const tokens=parseTheoryMoves(PLAN_OPENING_LINES[meta.key]);
+ const cut=Math.min(6+meta.planIndex,Math.max(0,tokens.length-4));
+ const board=new Chess();let valid=0;
+ for(const san of tokens.slice(0,cut)){try{if(!board.move(san))break;valid++}catch(e){break}}
+ LESSON_STARTS[meta.index]={fen:board.fen(),moves:tokens.slice(valid).join(' ')};
+}
 const LESSON_MIDGAME_CUTS={6:8,7:8,10:8,11:8,15:8,20:8,21:8,23:8,24:8,25:8,27:8,31:8,32:8,33:4,34:4,35:4};
 function lessonData(index){if(LESSON_STARTS[index]){const x=LESSON_STARTS[index];return{fen:x.fen,moves:parseTheoryMoves(x.moves)}}const all=parseTheoryMoves(L[index][1]),cut=Math.min(Math.max(0,all.length-2),LESSON_MIDGAME_CUTS[index]||0),board=new Chess();for(const san of all.slice(0,cut))board.move(san);return{fen:board.fen(),moves:all.slice(cut)}}
 function line_(){
@@ -509,7 +544,7 @@ function drawLessonArrow(){
 function guidedStart(){
  if(T.animating)return;T.pickAlternative=false;T.guided=true;T.humanSide=$('#lessonSide').value;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;T.i=0;T.guidedCount=0;T.guidedLimit=0;T.guidedLineIndex=0;T.guidedLineActive=true;T.pendingCoach=null;T.quizPending=false;$('#coachQuiz').hidden=true;$('#coachQuiz').replaceChildren();T.reviewBeforeFen=null;T.reviewAttempts=0;T.branch=false;const setup=lessonData(T.lesson);T.startFen=setup.fen;T.c=new Chess(T.startFen);T.m=setup.moves;T.guidedLineIndex=0;T.guidedLineActive=true;T.guidedLimit=0;const countLine=new Chess(T.startFen);for(const san of T.m){try{const played=countLine.move(san);if(played&&played.color===T.humanSide)T.guidedLimit++}catch(e){T.guidedLineActive=false;break}}if(!T.guidedLimit)T.guidedLimit=6;if(T.humanSide==='b'&&(T.lesson===7||T.lesson===10))T.guidedLineActive=false;
  $('#pr').hidden=true;$('#theoryNav').hidden=true;render();
- coachMessage('Vamos a aprender jugando: '+L[T.lesson][0],L[T.lesson][2]+' Esta clase sigue su propia secuencia didáctica. Tú realizarás las jugadas de tu color; el entrenador jugará las respuestas del curso, analizará tus decisiones y te explicará sus consecuencias. Si te apartas de la línea, continuará con Stockfish para que puedas explorar la posición.','Juegas con '+(T.humanSide==='w'?'blancas':'negras')+' · decisiones ilimitadas hasta terminar la partida · Entrenador activo');
+ const planMeta=PLAN_CLASS_META.find(x=>x.index===T.lesson);coachMessage('Vamos a aprender jugando: '+L[T.lesson][0],L[T.lesson][2]+' '+(planMeta?'Objetivo del plan: '+planMeta.plan[1]+' Secuencia orientativa: '+planMeta.plan[2]:'Esta clase sigue su propia secuencia didáctica.')+' Tú realizarás las jugadas de tu color; el entrenador responderá, analizará tus decisiones y explicará sus consecuencias. Las flechas son sugerencias, nunca órdenes.','Juegas con '+(T.humanSide==='w'?'blancas':'negras')+' · decisiones ilimitadas hasta terminar la partida · Entrenador activo');
  runGuidedReplies();
 }
 async function runGuidedReplies(){
@@ -526,7 +561,7 @@ async function runGuidedReplies(){
  const moves=T.c.moves({verbose:true}),checks=moves.filter(x=>x.san.includes('+')).length,captures=moves.filter(x=>x.captured).length,prior=T.pendingCoach;T.pendingCoach=null;
  const follow=replies.length?' El rival respondió '+replies.join(', ')+'.':'';
  const message=prior?prior.message+follow+' Ahora vuelve a elegir: revisa qué cambió después de la respuesta.':L[T.lesson][2]+' Mira primero los jaques ('+checks+'), las capturas ('+captures+') y las amenazas. Elige una jugada y te explicaré qué consigue y qué permite.';
- coachMessage(prior?prior.title:'Tu turno: '+(T.humanSide==='w'?'blancas':'negras'),message,'Entrenamiento en directo · '+T.guidedCount+' decisiones tuyas'+(prior?' · '+prior.status:''));
+ coachMessage(prior?prior.title:'Tu turno: '+(T.humanSide==='w'?'blancas':'negras'),message,'Entrenamiento en directo · '+T.guidedCount+' decisiones tuyas'+(prior?' · '+prior.status:''));if(T.guided&&PLAN_CLASS_META.some(x=>x.index===T.lesson)&&!T.c.isGameOver())await guidedHint();
 }
 function lessonTap(sq){
  if(!T.guided||T.animating||T.c.isGameOver()||T.c.turn()!==T.humanSide)return;
