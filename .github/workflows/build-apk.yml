@@ -51,6 +51,8 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+      - name: Apply custom Android launcher icon
+        run: node scripts/apply-android-branding.js
       - name: Set increasing Android version code
         run: |
           node -e "const fs=require('fs');const p='android/app/build.gradle';let s=fs.readFileSync(p,'utf8');const n=Number(process.env.GITHUB_RUN_NUMBER)||1;s=s.replace(/versionCode\\s+\\d+/, 'versionCode '+n);s=s.replace(/versionName\\s+['\"][^'\"]+['\"]/, 'versionName \\\"2.1.'+n+'\\\"');fs.writeFileSync(p,s);console.log('Android versionCode:',n)"
