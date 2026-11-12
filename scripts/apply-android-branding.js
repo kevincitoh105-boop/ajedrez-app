@@ -28,7 +28,6 @@ async function main() {
     const dir = path.join(res, 'mipmap-' + density);
     fs.mkdirSync(dir, { recursive: true });
 
-    // Icono clásico: imagen completa, centrada y sin deformaciones.
     const legacy = await sharp(source)
       .resize(legacySize, legacySize, {
         fit: 'contain',
@@ -36,12 +35,10 @@ async function main() {
       })
       .png()
       .toBuffer();
-
     await fs.promises.writeFile(path.join(dir, 'ic_launcher.png'), legacy);
     await fs.promises.writeFile(path.join(dir, 'ic_launcher_round.png'), legacy);
 
-    // Icono adaptativo: Android recorta un círculo/forma sobre el foreground.
-    // Mantener el arte dentro del 66% central evita que se corte.
+    // El foreground adaptativo queda dentro del 66% central para evitar recortes.
     const safeSize = Math.round(adaptiveSize * 0.66);
     const foreground = await sharp(source)
       .resize(safeSize, safeSize, {
@@ -62,14 +59,13 @@ async function main() {
       .composite([{ input: foreground, gravity: 'centre' }])
       .png()
       .toBuffer();
-
     await fs.promises.writeFile(path.join(dir, 'ic_launcher_foreground.png'), adaptive);
 
     for (const name of ['ic_launcher.png', 'ic_launcher_round.png', 'ic_launcher_foreground.png']) {
       const file = path.join(dir, name);
       const check = await sharp(file).metadata();
-      if (check.width !== (name === 'ic_launcher_foreground.png' ? adaptiveSize : legacySize) ||
-          check.height !== (name === 'ic_launcher_foreground.png' ? adaptiveSize : legacySize)) {
+      const expected = name === 'ic_launcher_foreground.png' ? adaptiveSize : legacySize;
+      if (check.width !== expected || check.height !== expected) {
         throw new Error('Dimensiones incorrectas en ' + file);
       }
     }
@@ -94,7 +90,7 @@ async function main() {
   const manifest = path.join('android', 'app', 'src', 'main', 'AndroidManifest.xml');
   if (!fs.existsSync(manifest)) throw new Error('No existe AndroidManifest.xml');
   let manifestText = fs.readFileSync(manifest, 'utf8');
-  const appTag = manifestText.match(/<application\\b[^>]*>/);
+  const appTag = manifestText.match(/<application\b[^>]*>/);
   if (!appTag) throw new Error('No se encontró la etiqueta <application> en AndroidManifest.xml');
   let app = appTag[0];
 
@@ -108,12 +104,13 @@ async function main() {
   manifestText = manifestText.replace(appTag[0], app);
   fs.writeFileSync(manifest, manifestText);
 
-  if (!/android:icon="@mipmap\\/ic_launcher"/.test(app) ||
-      !/android:roundIcon="@mipmap\\/ic_launcher_round"/.test(app)) {
+  if (!/android:icon="@mipmap\/ic_launcher"/.test(app) ||
+      !/android:roundIcon="@mipmap\/ic_launcher_round"/.test(app)) {
     throw new Error('El manifest no quedó enlazado a los iconos personalizados');
   }
 
-  console.log(`Icono CHESS generado correctamente desde assets/app-icon.png (${metadata.width}x${metadata.height}). Foreground adaptativo con zona segura del 66%.`);
+  console.log('Icono CHESS generado correctamente desde assets/app-icon.png (' +
+    metadata.width + 'x' + metadata.height + '), con zona segura adaptativa del 66%.');
 }
 
 main().catch(error => {
