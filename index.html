@@ -506,7 +506,7 @@ function line_(){
  T.lesson=+$('#ln').value;T.guided=false;T.pickAlternative=false;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;$('#pr').hidden=true;$('#theoryNav').hidden=false;
  const setup=lessonData(T.lesson);T.startFen=setup.fen;T.m=setup.moves;
  T.i=0;T.branch=false;T.c=new Chess(T.startFen);
- showLesson();step(0,0);coachIdle();
+ showLesson();step(0,0);if(!PLAN_CLASS_META.some(x=>x.index===T.lesson))coachIdle();
 }
 async function step(d,abs){
  if(T.guided){say('Estás en la clase interactiva. Juega en el tablero y sigue las indicaciones del entrenador.');return}
