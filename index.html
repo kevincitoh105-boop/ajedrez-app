@@ -75,7 +75,7 @@ small,#plan{color:var(--mut)}
 
  <div id="courseProgress" class="lesson"></div><div id="lesson" class="lesson"></div><div id="lessonStep" class="lesson"></div>
  <div class="row"><button id="markDone" class="go">Marcar clase como completada</button></div>
- <div class="row"><select id="alt" style="width:100%"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" class="go">Probar y ver respuesta</button></div>
+ <div class="row"><button id="pickAlt" class="go">Elegir jugada alternativa en el tablero</button><span id="altBoardStatus">Toca una pieza y luego su casilla de destino.</span><select id="alt" style="display:none"><option value="">Elige una jugada alternativa…</option></select><button id="altplay" style="display:none">Probar y ver respuesta</button></div>
  <div class="row"><button id="backline">Volver a la línea del curso</button></div>
  <p id="plan"></p>
  <div id="middlegamePlans" class="lesson"><div class="tag">Guía práctica · posiciones bloqueadas</div><h3>¿Qué hago cuando no hay una jugada evidente?</h3><p>Elige la apertura y estudia planes distintos según la estructura. No son recetas: cada plan indica qué condiciones deben cumplirse y qué intenta conseguir.</p><select id="planOpening" style="width:100%"><option value="caro">Caro-Kann</option><option value="ortodoxa">Defensa Ortodoxa</option><option value="londres">Sistema Londres</option></select><div id="planContent"></div></div>
@@ -149,7 +149,7 @@ L.push(
 let mode='play',sf=null,cur=null,score=0,engName='básico',engErr='';
 let evalBusy=false;
 const G={g:new Chess(),sel:null,me:'w',lvl:6,test:false,busy:false,over:false,flip:false,pm:null,hint:null,recordId:null};
-const T={c:new Chess(),m:[],i:0,startFen:new Chess().fen(),branch:false,lesson:0,animating:false,guided:false,humanSide:'w',sel:null,arrow:null,attempts:0,pm:null,guidedCount:0,guidedLimit:0,guidedLineIndex:0,guidedLineActive:true,pendingCoach:null,quizPending:false,reviewBeforeFen:null,reviewAttempts:0};
+const T={c:new Chess(),m:[],i:0,startFen:new Chess().fen(),branch:false,lesson:0,animating:false,guided:false,pickAlternative:false,humanSide:'w',sel:null,arrow:null,attempts:0,pm:null,guidedCount:0,guidedLimit:0,guidedLineIndex:0,guidedLineActive:true,pendingCoach:null,quizPending:false,reviewBeforeFen:null,reviewAttempts:0};
 const R={items:[],index:0,current:null,revealed:false,currentFailed:false,resumeFailed:false,demo:null};
 const A={previewFen:null,previewText:'',previewSel:null,previewPm:null,previewMove:null,previewId:null};
 /* ---------- Motor: Stockfish con varios candidatos y diagnóstico ---------- */
@@ -182,9 +182,9 @@ const flipped=()=>(G.me==='b')!==G.flip;
 const view=()=>mode==='theory'?{c:T.c,f:T.guided?T.humanSide==='b':theoryBlackPerspective()}:mode==='records'&&A.previewFen?{c:new Chess(A.previewFen),f:false}:{c:G.g,f:mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()};
 function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
- const interactiveTheory=mode==='theory'&&T.guided,selected=interactiveTheory?T.sel:G.sel;const tg=((mode==='play'||mode==='local'||mode==='train')&&G.sel||interactiveTheory&&T.sel)?c.moves({square:selected,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
+ const interactiveTheory=mode==='theory'&&T.guided,recordPreview=mode==='records'&&!!A.previewFen,selected=interactiveTheory?T.sel:recordPreview?A.previewSel:G.sel;const tg=((mode==='play'||mode==='local'||mode==='train')&&G.sel||interactiveTheory&&T.sel||recordPreview&&A.previewSel)?c.moves({square:selected,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
-  d.dataset.square=sq;d.className='sq '+((r+k)%2?'d':'l')+(((mode==='play'||mode==='local'||mode==='train')&&sq===G.sel)||(interactiveTheory&&sq===T.sel)?' sel':'')+(interactiveTheory&&T.arrow&&sq===T.arrow.to?(hint.kind==='wrong'?' coach-wrong':' coach-target'):'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
+  d.dataset.square=sq;d.className='sq '+((r+k)%2?'d':'l')+(((mode==='play'||mode==='local'||mode==='train')&&sq===G.sel)||(interactiveTheory&&sq===T.sel)||(recordPreview&&sq===A.previewSel)?' sel':'')+(interactiveTheory&&T.arrow&&sq===T.arrow.to?(T.arrow.kind==='wrong'?' coach-wrong':' coach-target'):'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
   if(p){const s=document.createElement('span');s.className=p.color;s.dataset.piece=p.type;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
   const screenRow=i>>3,screenCol=i&7;
   if(screenCol===0){const label=document.createElement('small');label.className='coord rank';label.textContent=sq[1];d.append(label)}
@@ -196,7 +196,7 @@ function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.boar
 function turnText(){const c=G.g;return(c.turn()===G.me?'Tu turno':'Piensa el rival')+(c.inCheck()?' · jaque':'')}
 function overText(){const c=G.g;if(c.isCheckmate())return c.turn()===G.me?'Jaque mate. Perdiste.':'Jaque mate. ¡Ganaste!';return c.isDraw()?'Tablas.':''}
 const vib=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
-function tap(sq){if(mode==='records'&&A.previewFen){recordPreviewTap(sq);return}if(mode==='theory'&&T.guided){lessonTap(sq);return}if((mode!=='play'&&mode!=='local'&&mode!=='train')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me)||(mode==='train'&&G.trainSolved))return;const c=G.g;
+function tap(sq){if(mode==='records'&&A.previewFen){recordPreviewTap(sq);return}if(mode==='theory'&&T.guided){lessonTap(sq);return}if(mode==='theory'&&T.pickAlternative){lessonExploreTap(sq);return}if((mode!=='play'&&mode!=='local'&&mode!=='train')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me)||(mode==='train'&&G.trainSolved))return;const c=G.g;
  if(G.sel){const ms=c.moves({square:G.sel,verbose:true}).filter(x=>x.to===sq);
   if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return mode==='train'?trainMove({from:G.sel,to:sq}):move({from:G.sel,to:sq})}}
  const p=c.get(sq),sideToMove=c.turn();G.sel=p&&p.color===(mode==='local'||mode==='train'?sideToMove:G.me)?sq:null;render()}
@@ -463,7 +463,7 @@ const LESSON_STARTS={
 const LESSON_MIDGAME_CUTS={6:8,7:8,10:8,11:8,15:8,20:8,21:8,23:8,24:8,25:8,27:8,31:8,32:8,33:4,34:4,35:4};
 function lessonData(index){if(LESSON_STARTS[index]){const x=LESSON_STARTS[index];return{fen:x.fen,moves:parseTheoryMoves(x.moves)}}const all=parseTheoryMoves(L[index][1]),cut=Math.min(Math.max(0,all.length-2),LESSON_MIDGAME_CUTS[index]||0),board=new Chess();for(const san of all.slice(0,cut))board.move(san);return{fen:board.fen(),moves:all.slice(cut)}}
 function line_(){
- T.lesson=+$('#ln').value;T.guided=false;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;$('#pr').hidden=true;$('#theoryNav').hidden=false;
+ T.lesson=+$('#ln').value;T.guided=false;T.pickAlternative=false;T.sel=null;T.arrow=null;T.attempts=0;T.pm=null;$('#pr').hidden=true;$('#theoryNav').hidden=false;
  const setup=lessonData(T.lesson);T.startFen=setup.fen;T.m=setup.moves;
  T.i=0;T.branch=false;T.c=new Chess(T.startFen);
  showLesson();step(0,0);coachIdle();
@@ -483,13 +483,13 @@ async function step(d,abs){
   else say(T.i===0?'Inicio de la línea. Pulsa Siguiente para comenzar.':'Línea reproducida correctamente.');
  }finally{T.animating=false}
 }
-async function explore(){if(T.branch||T.animating)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' '),m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.animating=true;try{await animatePieceMoves(animationForMove(m,m.color));T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best,reply=T.c.moves({verbose:true}).find(y=>y.from===x.slice(0,2)&&y.to===x.slice(2,4)&&(!x[4]||y.promotion===x[4]));if(reply){await animatePieceMoves(animationForMove(reply,reply.color));T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo explorar esta variante: '+e.message)}finally{T.animating=false}}
+function lessonExploreTap(sq){if(!T.pickAlternative||T.animating||T.branch)return;if(T.sel){const m=T.c.moves({square:T.sel,verbose:true}).find(x=>x.to===sq);if(m){const value=m.from+' '+m.to+(m.promotion?' '+m.promotion:'');$('#alt').value=value;T.pickAlternative=false;T.sel=null;$('#altBoardStatus').textContent='Alternativa elegida: '+m.san+'. El motor responderá para que compares.';explore();return}}const p=T.c.get(sq);T.sel=p&&p.color===T.c.turn()?sq:null;render()}\nasync function explore(){if(T.branch||T.animating)return;const v=$('#alt').value;if(!v)return say('Primero elige una jugada alternativa.');const [from,to,promotion]=v.split(' '),m=T.c.moves({square:from,verbose:true}).find(x=>x.to===to&&(!promotion||x.promotion===promotion));if(!m)return say('Esa jugada ya no es legal.');T.animating=true;try{await animatePieceMoves(animationForMove(m,m.color));T.c.move({from,to,promotion});T.branch=true;render();renderLessonStep();say('Has probado '+m.san+'. Compara esta alternativa con la línea principal: el motor calcula la respuesta más fuerte…');const r=await ask(T.c.fen(),'depth 12',20);if(r.best&&r.best!=='(none)'){const x=r.best,reply=T.c.moves({verbose:true}).find(y=>y.from===x.slice(0,2)&&y.to===x.slice(2,4)&&(!x[4]||y.promotion===x[4]));if(reply){await animatePieceMoves(animationForMove(reply,reply.color));T.c.move({from:reply.from,to:reply.to,promotion:reply.promotion});render();say('Respuesta del motor: '+reply.san+'. Observa qué amenaza crea y cómo cambia la posición.');return}}say('No se encontró una respuesta legal en esta posición.')}catch(e){say('No se pudo explorar esta variante: '+e.message)}finally{T.animating=false}}
 function resetLine(){if(T.animating)return;T.branch=false;line_();say('Volviste a la línea principal de la clase.')}
 
 function coachMessage(title,message,status){$('#coachTitle').textContent=title;$('#coachMessage').textContent=message;$('#coachStatus').textContent=status||'Tu turno: piensa antes de mover y explica mentalmente tu plan.'}
 function coachIdle(){coachMessage('Aprende jugando','Elige con qué color quieres jugar y pulsa «Comenzar clase interactiva». Te explicaré cada idea, esperaré tus movimientos y responderé a tus decisiones.','Entrenador listo · '+(T.lesson+1)+' de '+L.length+' clases')}
 function drawLessonArrow(){
- const board=$('#board');const hint=mode==='theory'&&T.guided?T.arrow:G.hint;if(!board||!hint)return;
+ const board=$('#board');const hint=mode==='theory'?(T.guided?T.arrow:null):G.hint;if(!board||!hint)return;
  const a=board.querySelector('[data-square="'+hint.from+'"]'),b=board.querySelector('[data-square="'+hint.to+'"]');if(!a||!b)return;
  const br=board.getBoundingClientRect(),ar=a.getBoundingClientRect(),bb=b.getBoundingClientRect(),x1=(ar.left+ar.width/2-br.left)/br.width*800,y1=(ar.top+ar.height/2-br.top)/br.height*800,x2=(bb.left+bb.width/2-br.left)/br.width*800,y2=(bb.top+bb.height/2-br.top)/br.height*800;
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 800 800');svg.setAttribute('class','coach-arrow-layer');
@@ -661,7 +661,7 @@ async function reviewGame(){if(G.busy)return;const history=G.g.history({verbose:
  }catch(e){$('#reviewResults').textContent='El análisis se interrumpió: '+e.message+'. La partida original sigue intacta.';say('No se pudo completar el análisis de la partida.')}finally{G.busy=false}}
 $('#reviewGame').onclick=reviewGame;$('#reviewLocal').onclick=reviewGame;
 L.forEach((l,i)=>$('#ln').add(new Option(l[0],i)));
-$('#ln').onchange=line_;$('#planOpening').onchange=renderMiddlegamePlans;$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;
+$('#ln').onchange=line_;$('#planOpening').onchange=renderMiddlegamePlans;$('#pickAlt').onclick=()=>{if(T.branch||T.animating)return;T.pickAlternative=true;T.sel=null;$('#altBoardStatus').textContent='Selecciona una pieza y una casilla legal en el tablero. La jugada será tuya.';say('Elige tu alternativa directamente en el tablero.');render()};$('#p0').onclick=()=>step(0,0);$('#p1').onclick=()=>step(-1);$('#p2').onclick=()=>step(1);$('#altplay').onclick=explore;$('#backline').onclick=resetLine;
 function openGuidedLesson(restart=false){
  if(mode!=='theory'){mode='theory';tabs();line_()}
  if(restart){T.guided=false;T.animating=false}
