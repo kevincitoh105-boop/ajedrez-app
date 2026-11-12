@@ -103,7 +103,9 @@ for (const [lessonIndex, lesson] of lessons.entries()) {
     }
   }
   for (let target = 0; target <= moves.length; target++) {
-    const replay = new Chess();
+    // Las clases con posición temática deben reconstruirse desde su FEN,
+    // igual que la reproducción principal, no desde la posición inicial.
+    const replay = planSetup ? new Chess(planSetup.fen) : new Chess();
     for (const san of moves.slice(0, target)) replay.move(san);
     if (replay.history().length !== target) throw new Error('Falló la reconstrucción en ' + lesson[0] + ', paso ' + target);
   }
