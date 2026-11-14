@@ -29,6 +29,9 @@ for (const meta of planSandbox.__planSetup.PLAN_CLASS_META) {
     catch (error) { throw new Error('Posición/continuación inválida en ' + meta.label + ' · plan ' + (meta.planIndex + 1) + ' | ' + san + ': ' + error.message); }
   }
 }
+  if (chess.isCheckmate() || chess.isStalemate() || chess.isDraw()) {
+    throw new Error('El plan termina en una posición terminal o tablas sin resolver: ' + meta.label + ' · plan ' + (meta.planIndex + 1));
+  }
 if (planSandbox.__planSetup.PLAN_CLASS_META.length !== 30)
   throw new Error('Se esperaban 30 clases visuales de medio juego.');
 const distinctPlanPositions = new Set(planSandbox.__planSetup.PLAN_CLASS_META.map(meta => planSandbox.__planSetup.LESSON_STARTS[meta.index].fen));
@@ -49,7 +52,7 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 74) throw new Error('Se esperaban 74 lecciones (36 originales + 6 del video + 2 de la partida de Morphy + 30 planes); encontradas: ' + lessons.length);
+if (lessons.length !== 82) throw new Error('Se esperaban 82 lecciones (36 originales + 6 del video + 2 de Morphy + 30 planes + 8 clases nuevas); encontradas: ' + lessons.length);
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
@@ -226,7 +229,15 @@ const requiredFeatures = [
   ['planes de medio juego de la Caro-Kann', 'caro:{title:'],
   ['planes de medio juego de la Defensa Ortodoxa', 'ortodoxa:{title:'],
   ['planes de medio juego del Sistema Londres', 'londres:{title:'],
-  ['selector de planes para posiciones bloqueadas', 'id="planOpening"']
+  ['selector de planes para posiciones bloqueadas', 'id="planOpening"'],
+  ['interruptor de premovimientos', 'id="optPremove"'],
+  ['ejecución segura de premovimientos', 'async function applyQueuedPremove()'],
+  ['chat de partida', 'id="chatPanel"'],
+  ['selector de idiomas con traducción de controles', 'function applyLanguage(lang)'],
+  ['clasificación de jugada teórica como de manual', 'DE MANUAL · '],
+  ['pistas permanentes del entrenador', 'if(T.guided&&!T.c.isGameOver())await guidedHint();'],
+  ['curso ampliado de cálculo', 'Clase 75 · Cálculo de variantes'],
+  ['curso ampliado de estrategia', 'Clase 82 · Convertir una ventaja sin precipitarse']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
