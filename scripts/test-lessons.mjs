@@ -28,10 +28,10 @@ for (const meta of planSandbox.__planSetup.PLAN_CLASS_META) {
     try { chess.move(san); }
     catch (error) { throw new Error('Posición/continuación inválida en ' + meta.label + ' · plan ' + (meta.planIndex + 1) + ' | ' + san + ': ' + error.message); }
   }
-}
   if (chess.isCheckmate() || chess.isStalemate() || chess.isDraw()) {
     throw new Error('El plan termina en una posición terminal o tablas sin resolver: ' + meta.label + ' · plan ' + (meta.planIndex + 1));
   }
+}
 if (planSandbox.__planSetup.PLAN_CLASS_META.length !== 30)
   throw new Error('Se esperaban 30 clases visuales de medio juego.');
 const distinctPlanPositions = new Set(planSandbox.__planSetup.PLAN_CLASS_META.map(meta => planSandbox.__planSetup.LESSON_STARTS[meta.index].fen));
