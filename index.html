@@ -601,6 +601,14 @@ for(const source of VIDEO_POSITION_SOURCES){
 LESSON_STARTS[40]={fen:'7k/8/8/8/8/8/8/K2Q4 w - - 0 1',moves:'Qd4+ Kg8 Qd5+ Kh8 Qh5+ Kg8'};
 LESSON_STARTS[41]={fen:'8/6k1/8/2P5/8/8/4K3/8 w - - 0 1',moves:'Kd3 Kf6 Kc4 Ke6 Kb5 Kd5 c6 Kd6'};
 
+// Las lecciones de finales del vídeo llevan FEN didáctico en el texto, no un PGN.
+for(const [index,lesson] of L.entries()){
+ if(!String(lesson[1]||'').startsWith('Posición didáctica:'))continue;
+ const fen=String(lesson[1]).replace('Posición didáctica:','').trim();
+ if(lesson[0].includes('Finales de dama'))LESSON_STARTS[index]={fen,moves:'Qd4+ Kg8 Qd5+ Kh8 Qh5+ Kg8'};
+ if(lesson[0].includes('Finales: activar el rey'))LESSON_STARTS[index]={fen,moves:'Kd3 Kf6 Kc4 Ke6 Kb5 Kd5 c6 Kd6'};
+}
+
 // Posición exacta de la partida de Morphy después de 15...Nxd7; se deriva del PGN histórico.
 const operaLessonIndex=L.findIndex(x=>x[0].includes('La partida de la Ópera'));
 const operaPuzzleIndex=operaLessonIndex+1;
