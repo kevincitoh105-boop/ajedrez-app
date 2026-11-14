@@ -52,7 +52,7 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 74) throw new Error('Se esperaban 74 lecciones (36 originales + 6 del video + 2 de Morphy + 30 planes; las 8 clases nuevas están incluidas en las 36 originales); encontradas: ' + lessons.length);
+if (lessons.length !== 82) throw new Error('Se esperaban 82 lecciones (74 existentes + 8 clases didácticas originales nuevas); encontradas: ' + lessons.length);
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
