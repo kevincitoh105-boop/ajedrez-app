@@ -61,7 +61,7 @@ for (let i = 36; i < 42; i++) {
     throw new Error('Falta la referencia verificable al vídeo fuente de la lección: ' + lessons[i][0]);
 }
 
-const operaLessonIndex = lessons.findIndex(x => x[0].includes('La partida histórica · La partida de la Ópera'));
+const operaLessonIndex = lessons.findIndex(x => x[0].includes('La partida de la Ópera'));
 const operaPuzzleIndex = operaLessonIndex + 1;
 const operaLesson = lessons[operaLessonIndex], operaPuzzle = lessons[operaPuzzleIndex];
 if (operaLessonIndex < 0 || !operaPuzzle) throw new Error('No se localizaron las clases históricas de Morphy.');
