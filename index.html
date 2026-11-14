@@ -233,7 +233,8 @@ function saveSettingOptions(){
  render();
 }
 function applyBoardTheme(theme){localStorage.setItem('cm.boardTheme',theme);$('#board').className='theme-'+theme;render()}
-\nfunction kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
+
+function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.className='theme-'+(localStorage.getItem('cm.boardTheme')||'classic');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
  const interactiveTheory=mode==='theory'&&T.guided,theoryPick=mode==='theory'&&T.pickAlternative,recordPreview=mode==='records'&&!!A.previewFen,selected=interactiveTheory||theoryPick?T.sel:recordPreview?A.previewSel:G.sel;const tg=readOption('legal',true)&&((mode==='play'||mode==='local'||mode==='train')&&G.sel||interactiveTheory&&T.sel||theoryPick&&T.sel||recordPreview&&A.previewSel)?c.moves({square:selected,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
