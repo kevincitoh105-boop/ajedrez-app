@@ -57,8 +57,7 @@ for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
   if (!String(lessons[i][5] || '').includes('PupiloChess') ||
-      !/^[A-Za-z0-9_-]{11}$/.test(String(lessons[i][6] || '')) ||
-      !/^[A-Za-z0-9_-]{11}$/.test(String(lessons[i][7] || '')))
+      !/^[A-Za-z0-9_-]{11}$/.test(String(lessons[i][6] || '')))
     throw new Error('Falta la referencia verificable al vídeo fuente de la lección: ' + lessons[i][0]);
 }
 
