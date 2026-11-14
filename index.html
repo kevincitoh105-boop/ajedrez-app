@@ -51,6 +51,25 @@ small,#plan{color:var(--mut)}
 #board.theme-wood .l{background:#e8c99b}#board.theme-wood .d{background:#9b6845}
 #board.theme-slate .l{background:#cbd5e1}#board.theme-slate .d{background:#475569}
 #board.theme-purple .l{background:#e9d5ff}#board.theme-purple .d{background:#7653a6}
+
+/* Paleta Chess Master: azul frío y blanco, coordinada con el fondo.
+   La portada (#home) y la bombilla/pista (.hint) conservan su diseño. */
+:root{--bg:#101f2c;--ink:#f7fbff;--lt:#f7fbff;--dk:#285b7c;--ac:#2788c7;--mut:#b5c7d5;--pn:#1b3448}
+button.on,button.go{background:#2788c7;color:#fff;border-color:#2788c7}
+.sq .coord{color:#17364d}
+.sq.l .coord{color:#17364d}.sq.d .coord{color:#f7fbff}
+.last{background-image:linear-gradient(rgba(255,255,255,.48),rgba(255,255,255,.48))}
+.sel{box-shadow:inset 0 0 0 4px #2788c7}
+.lesson h3,.lesson b,.lesson a{color:#78c2f2}
+.coach-panel{background:#1b3448;color:#f7fbff;border:2px solid #3976a8}
+.coach-copy h3{color:#a9d9fa}
+.coach-avatar{border-color:#3976a8}
+.coach-tag{color:#b5c7d5}
+.coach-quiz{border-color:#3976a8;background:rgba(57,118,168,.18)}
+.switch-row input:checked{background:#3976a8}
+.switch-row input:before{background:#f7fbff}
+.switch-row input:checked:before{background:#fff}
+#board.theme-wood .l{background:#f7fbff}
 </style></head><body><main>
 <section id="home">
  <div class="home-mark">♞</div><h1>MAESTRO<br>DE AJEDREZ</h1><div class="subtitle">Entrena. Comprende. Decide.</div>
@@ -400,7 +419,7 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   if(after.isCheck())facts.push('Tu rey está en jaque: la prioridad es salir del jaque, no continuar con un plan.');
   const label=loss<=10?'EXCELENTE':loss<=30?'BUENA':loss<=70?'IMPRECISA':loss<=130?'MALA':loss<=250?'MUY MALA':'ERROR GRAVE';
   const saved=loss>=70?saveMistake({fen:before,playedSan:san,bestSan,bestUci:best.best||'',replySan,loss,createdAt:Date.now()}):false;
-  const color=loss<=30?'#9bd6a5':loss<=70?'#f2d27a':'#ff9999';
+  const color=loss<=30?'#9bd6a5':loss<=70?'#ffffff':'#ff9999';
   const box=document.createElement('div');box.id='move-review';box.style.cssText='padding:12px;margin:8px 0;border:1px solid #71858a;border-radius:10px;background:#22343c;line-height:1.5';
   const title=document.createElement('h3');title.style.cssText='margin:0 0 8px;color:'+color;title.textContent='Tu jugada: '+label+' · '+san+' · pérdida estimada '+loss+' cp';box.append(title);
   const p=document.createElement('p');p.textContent=loss<=10?'La evaluación apenas cambia: tu jugada mantiene prácticamente la calidad de la mejor opción calculada.':loss<=30?'La jugada es razonable, aunque el motor encuentra una continuación algo más precisa.':loss<=70?'La idea tiene sentido, pero concede una ventaja apreciable. Compara las amenazas que permite con las que crea.':'La posición empeora de forma importante. No te quedes con la etiqueta «mala»: identifica el recurso concreto del rival que no tuviste en cuenta.';box.append(p);
