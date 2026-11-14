@@ -3,30 +3,14 @@ const path = require('path');
 const sharp = require('sharp');
 
 async function main() {
-  let source = path.join('assets', 'app-icon.png');
-  let sourceDescription = 'assets/app-icon.png';
+  const source = path.join('assets', 'app-icon.png');
   const res = path.join('android', 'app', 'src', 'main', 'res');
   if (!fs.existsSync(source)) throw new Error('Falta assets/app-icon.png');
   if (!fs.existsSync(res)) throw new Error('No existe el directorio de recursos Android: ' + res);
 
   const metadata = await sharp(source, { failOn: 'error' }).metadata();
-  if (metadata.format !== 'png' || !metadata.width || !metadata.height) {
-    throw new Error('assets/app-icon.png debe ser un PNG válido; no se permite sustituirlo por la imagen de portada.');
-  }
-  if (!metadata.format || !metadata.width || !metadata.height) throw new Error('Metadatos de imagen incompletos');
-  } catch (error) {
-    const fallback = path.join('assets', 'home-background.webp');
-    if (!fs.existsSync(fallback)) throw new Error('El icono PNG está dañado y no existe una imagen alternativa: ' + error.message);
-    source = fallback;
-    sourceDescription = 'assets/home-background.webp (respaldo: app-icon.png ilegible)';
-    metadata = await sharp(source, { failOn: 'error' }).metadata();
-    console.warn('AVISO: assets/app-icon.png no se puede leer; se usará home-background.webp para generar los iconos Android.');
-  }
-  if (!metadata.format || !metadata.width || !metadata.height || metadata.width < 128 || metadata.height < 128) {
-    throw new Error('La imagen seleccionada para el icono Android no es válida o es demasiado pequeña');
-  }
-  if (metadata.width < 128 || metadata.height < 128) {
-    throw new Error('El icono original debe tener al menos 128x128 px');
+  if (metadata.format !== 'png' || !metadata.width || !metadata.height || metadata.width < 128 || metadata.height < 128) {
+    throw new Error('assets/app-icon.png debe ser un PNG válido de al menos 128x128 px.');
   }
 
   const densities = [
