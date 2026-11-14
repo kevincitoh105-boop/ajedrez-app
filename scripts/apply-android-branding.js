@@ -9,10 +9,11 @@ async function main() {
   if (!fs.existsSync(source)) throw new Error('Falta assets/app-icon.png');
   if (!fs.existsSync(res)) throw new Error('No existe el directorio de recursos Android: ' + res);
 
-  let metadata;
-  try {
-    metadata = await sharp(source, { failOn: 'error' }).metadata();
-    if (!metadata.format || !metadata.width || !metadata.height) throw new Error('Metadatos de imagen incompletos');
+  const metadata = await sharp(source, { failOn: 'error' }).metadata();
+  if (metadata.format !== 'png' || !metadata.width || !metadata.height) {
+    throw new Error('assets/app-icon.png debe ser un PNG válido; no se permite sustituirlo por la imagen de portada.');
+  }
+  if (!metadata.format || !metadata.width || !metadata.height) throw new Error('Metadatos de imagen incompletos');
   } catch (error) {
     const fallback = path.join('assets', 'home-background.webp');
     if (!fs.existsSync(fallback)) throw new Error('El icono PNG está dañado y no existe una imagen alternativa: ' + error.message);
@@ -121,7 +122,7 @@ async function main() {
     throw new Error('El manifest no quedó enlazado a los iconos personalizados');
   }
 
-  console.log('Icono CHESS generado correctamente desde ' + sourceDescription + ' (' +
+  console.log('Icono CHESS generado correctamente desde ' + source + ' (' +
     metadata.width + 'x' + metadata.height + '), con zona segura adaptativa del 66%.');
 }
 
