@@ -596,10 +596,13 @@ LESSON_STARTS[40]={fen:'7k/8/8/8/8/8/8/K2Q4 w - - 0 1',moves:'Qd4+ Kg8 Qd5+ Kh8 
 LESSON_STARTS[41]={fen:'8/6k1/8/2P5/8/8/4K3/8 w - - 0 1',moves:'Kd3 Kf6 Kc4 Ke6 Kb5 Kd5 c6 Kd6'};
 
 // Posición exacta de la partida de Morphy después de 15...Nxd7; se deriva del PGN histórico.
-const operaMoves=parseTheoryMoves(L[42][1]);
+const operaLessonIndex=L.findIndex(x=>x[0].includes('La partida histórica · La partida de la Ópera'));
+const operaPuzzleIndex=operaLessonIndex+1;
+if(operaLessonIndex<0||!L[operaPuzzleIndex]?.[0]?.includes('Desafío interactivo'))throw new Error('No se localizaron las dos lecciones históricas de Morphy.');
+const operaMoves=parseTheoryMoves(L[operaLessonIndex][1]);
 const operaBoard=new Chess();
 for(const san of operaMoves.slice(0,30))operaBoard.move(san);
-LESSON_STARTS[43]={fen:operaBoard.fen(),moves:operaMoves.slice(30).join(' ')};
+LESSON_STARTS[operaPuzzleIndex]={fen:operaBoard.fen(),moves:operaMoves.slice(30).join(' ')};
 
 const PLAN_POSITION_SOURCES={
  londres:[{lesson:27,cut:8},{lesson:14,cut:7},{lesson:23,cut:8},{lesson:24,cut:10},{lesson:13,cut:8},{lesson:1,cut:8},{lesson:26,cut:8},{lesson:15,cut:9},{lesson:13,cut:10},{lesson:32,cut:9}],
