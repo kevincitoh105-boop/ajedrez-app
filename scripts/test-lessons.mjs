@@ -56,8 +56,9 @@ if (lessons.length !== 82) throw new Error('Se esperaban 82 lecciones (36 origin
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
-  if (!lessons[i][6]?.toLowerCase().includes('no '))
-    throw new Error('Falta aclarar la precisión de la posición didáctica: ' + lessons[i][0]);
+  if (!String(lessons[i][6] || '').includes('PupiloChess') ||
+      !/^[A-Za-z0-9_-]{11}$/.test(String(lessons[i][7] || '')))
+    throw new Error('Falta la referencia verificable al vídeo fuente de la lección: ' + lessons[i][0]);
 }
 
 const operaLesson = lessons[42], operaPuzzle = lessons[43];
