@@ -219,7 +219,7 @@ async function ask(fen,go,lvl){await EP;
 /* ---------- UI ---------- */
 const say=t=>$('#st').textContent=t;
 const flipped=()=>(G.me==='b')!==G.flip;
-const view=()=>mode==='play'&&A.review?{c:new Chess(A.review.moves[A.review.index].fen),f:false}:mode==='theory'?{c:T.c,f:T.guided?T.humanSide==='b':theoryBlackPerspective()}:mode==='records'&&A.previewFen?{c:new Chess(A.previewFen),f:false}:{c:G.g,f:mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()};
+const view=()=>(mode==='play'||mode==='local')&&A.review?{c:new Chess(A.review.moves[A.review.index].fen),f:false}:mode==='theory'?{c:T.c,f:T.guided?T.humanSide==='b':theoryBlackPerspective()}:mode==='records'&&A.previewFen?{c:new Chess(A.previewFen),f:false}:{c:G.g,f:mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()};
 function readOption(name,fallback){try{const v=localStorage.getItem('cm.opt.'+name);return v===null?fallback:v==='1'}catch(e){return fallback}}
 function loadSettings(){
  const options=[['legal','optLegal'],['last','optLast'],['coords','optCoords'],['check','optCheck'],['queen','optQueen']];
