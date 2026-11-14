@@ -235,6 +235,8 @@ const requiredFeatures = [
   ['planes de medio juego del Sistema Londres', 'londres:{title:'],
   ['selector de planes para posiciones bloqueadas', 'id="planOpening"'],
   ['interruptor de premovimientos', 'id="optPremove"'],
+  ['interruptor de nombres de aperturas', 'id="optOpenings"'],
+  ['reconocimiento de aperturas', 'function currentOpeningName(c)'],
   ['ejecución segura de premovimientos', 'async function applyQueuedPremove()'],
   ['chat de partida', 'id="chatPanel"'],
   ['selector de idiomas con traducción de controles', 'function applyLanguage(lang)'],
