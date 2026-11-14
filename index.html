@@ -16,7 +16,7 @@ nav button{flex:0 0 auto;min-width:82px;white-space:nowrap}#home{min-height:calc
 .sq{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;font:calc(var(--bd)/8*.78)/1 'Noto Sans Symbols 2','Segoe UI Symbol',serif;position:relative}
 .sq .coord{position:absolute;z-index:3;font:700 clamp(9px,calc(var(--bd)/8*.15),12px)/1 Arial,sans-serif;pointer-events:none;text-shadow:none}.sq.l .coord{color:#26352f}.sq.d .coord{color:#f4e8c8}.sq .coord.rank{left:3px;top:2px}.sq .coord.file{right:3px;bottom:2px}
 .l{background:var(--lt)}.d{background:var(--dk)}
-.w{color:#fff;text-shadow:0 0 3px #000,0 0 1px #000}.b{color:#101010;transform:rotate(180deg)}
+.w{color:#fff;text-shadow:0 0 3px #000,0 0 1px #000}.b{color:#101010;transform:none}.b.black-rotated{transform:rotate(180deg)}
 .sel{box-shadow:inset 0 0 0 4px var(--ac)}
 .hint{box-shadow:inset 0 0 0 4px #4ea3ff}
 .last{background-image:linear-gradient(rgba(242,180,65,.45),rgba(242,180,65,.45))}
@@ -35,17 +35,22 @@ small,#plan{color:var(--mut)}
 #altplay,#backline{flex:1}
 [hidden]{display:none!important}
 
-#board{position:relative}.piece-flight{position:fixed;z-index:9999;pointer-events:none;margin:0;display:flex;align-items:center;justify-content:center;will-change:transform;text-shadow:0 1px 4px #0008}
+#modeNav button:not(#homeTab){display:none}#modeNav{justify-content:flex-start}#board{position:relative}.piece-flight{position:fixed;z-index:9999;pointer-events:none;margin:0;display:flex;align-items:center;justify-content:center;will-change:transform;text-shadow:0 1px 4px #0008}
 #trainFeedback{min-height:5em}.train-explain{border-left:4px solid var(--ac);padding:10px;margin:8px 0;background:#1a2a31;border-radius:6px}.coach-note{border-left:3px solid var(--ac);padding:8px 10px;background:#1a2a31;border-radius:4px;margin:8px 0}
 .coach-panel{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;background:#f0dfc2;color:#342719;border:2px solid #b89b72;border-radius:12px;padding:10px;margin:8px 0;font-family:Georgia,serif}
 .coach-avatar{width:92px;height:118px;object-fit:cover;object-position:center 22%;border:2px solid #b89b72;border-radius:8px;background:#fff}
 .coach-copy h3{margin:0 0 5px;color:#563d2b;font-size:17px}.coach-copy p{margin:4px 0;font-size:14px;line-height:1.35}
 .coach-tools{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;align-items:center}.coach-tools button,.coach-tools select{font-size:14px;padding:8px 10px}#coachPanel[data-mode="train"] .coach-tools{display:flex;grid-column:1/-1}#coachPanel[data-mode="train"] .coach-tools>#trainActions{display:flex;width:100%;margin:0}#coachPanel[data-mode="train"] .coach-tools>label,#coachPanel[data-mode="train"] .coach-tools>#guidedStart,#coachPanel[data-mode="train"] .coach-tools>#guidedHint,#coachPanel[data-mode="train"] .coach-tools>#guidedRetry,#coachPanel[data-mode="train"] .coach-tools>#guidedNext{display:none}
 #coachMessage{min-height:58px}.coach-tag{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#775a3d}
-.coach-arrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 4px;border-bottom:1px solid #3c545d;font:600 16px Arial,sans-serif}.switch-row input{appearance:none;width:54px;height:30px;border-radius:20px;background:#526875;position:relative;flex:0 0 auto;cursor:pointer}.switch-row input:checked{background:#9dc9f7}.switch-row input:before{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#eaf4ff;top:4px;left:4px;transition:transform .15s}.switch-row input:checked:before{transform:translateX(24px);background:#10344d}.coach-arrow-layer{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
 .coach-target{box-shadow:inset 0 0 0 3px #299c58}.coach-wrong{box-shadow:inset 0 0 0 3px #d94b4b}.coach-quiz{margin-top:10px;padding:12px;border:1px solid #a98b61;border-radius:12px;background:rgba(180,145,95,.12)}.coach-quiz button{display:block;width:100%;margin:6px 0;text-align:left}.coach-quiz .quiz-result{font-weight:600;margin-top:8px}
 /* Portada fotográfica solicitada: imagen propia del proyecto y contraste para el menú. */
 #home{background-image:linear-gradient(180deg,rgba(5,12,20,.48),rgba(5,12,20,.72)),url('assets/home-background.webp');background-position:center 34%;background-size:cover;background-repeat:no-repeat;background-attachment:scroll;border-radius:22px;overflow:hidden}
+
+#board.theme-blue .l{background:#f1f5f9}#board.theme-blue .d{background:#3976a8}
+#board.theme-wood .l{background:#e8c99b}#board.theme-wood .d{background:#9b6845}
+#board.theme-slate .l{background:#cbd5e1}#board.theme-slate .d{background:#475569}
+#board.theme-purple .l{background:#e9d5ff}#board.theme-purple .d{background:#7653a6}
 </style></head><body><main>
 <section id="home">
  <div class="home-mark">♞</div><h1>MAESTRO<br>DE AJEDREZ</h1><div class="subtitle">Entrena. Comprende. Decide.</div>
@@ -93,6 +98,21 @@ small,#plan{color:var(--mut)}
  <div id="recordDetail" class="lesson" hidden></div>
  <div class="row"><button id="recordsBack" hidden>Volver a los registros</button><button id="recordsRefresh">Actualizar</button></div>
  <p id="recordPreviewNote" class="coach-note" hidden></p>
+</section>
+<section id="settings" hidden>
+ <div class="lesson"><div class="tag">Personalización</div><h3>Ajustes de Chess Master</h3>
+  <div class="row"><label for="appLanguage">Idioma</label><select id="appLanguage"><option value="es">Español</option><option value="en">English</option><option value="pt">Português</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ar">العربية</option></select></div>
+  <div class="row"><label for="boardTheme">Color del tablero</label><select id="boardTheme"><option value="classic">Clásico verde</option><option value="blue">Azul y blanco</option><option value="wood">Madera</option><option value="slate">Pizarra</option><option value="purple">Violeta</option></select></div>
+  <div class="row"><label for="settingsLevel">Dificultad del rival</label><input id="settingsLevel" type="range" min="0" max="20" step="1"><span id="settingsLevelValue"></span></div>
+ </div>
+ <div class="lesson"><div class="tag">Opciones de partida</div>
+  <label class="switch-row"><span>Mostrar movimientos legales</span><input id="optLegal" type="checkbox"></label>
+  <label class="switch-row"><span>Resaltar última jugada</span><input id="optLast" type="checkbox"></label>
+  <label class="switch-row"><span>Mostrar coordenadas</span><input id="optCoords" type="checkbox"></label>
+  <label class="switch-row"><span>Indicador de rey en jaque</span><input id="optCheck" type="checkbox"></label>
+  <label class="switch-row"><span>Promover siempre a dama</span><input id="optQueen" type="checkbox"></label>
+  <p class="coach-note">Los cambios se guardan en este dispositivo. Los ajustes de jugadas se aplican al tablero al instante.</p>
+ </div>
 </section>
 </main>
 <script type="module">
@@ -200,15 +220,15 @@ async function ask(fen,go,lvl){await EP;
 const say=t=>$('#st').textContent=t;
 const flipped=()=>(G.me==='b')!==G.flip;
 const view=()=>mode==='theory'?{c:T.c,f:T.guided?T.humanSide==='b':theoryBlackPerspective()}:mode==='records'&&A.previewFen?{c:new Chess(A.previewFen),f:false}:{c:G.g,f:mode==='local'?false:mode==='train'?G.trainSide==='b':flipped()};
-function kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
+function readOption(name,fallback){try{const v=localStorage.getItem('cm.opt.'+name);return v===null?fallback:v==='1'}catch(e){return fallback}}\nfunction kingSq(c){for(let r=0;r<8;r++)for(let k=0;k<8;k++){const p=c.board()[r][k];if(p&&p.type==='k'&&p.color===c.turn())return 'abcdefgh'[k]+(8-r)}}
 function render(){const{c,f}=view(),b=$('#board');b.innerHTML='';const bd=c.board(),h=c.history({verbose:true}),last=h[h.length-1];
- const interactiveTheory=mode==='theory'&&T.guided,theoryPick=mode==='theory'&&T.pickAlternative,recordPreview=mode==='records'&&!!A.previewFen,selected=interactiveTheory||theoryPick?T.sel:recordPreview?A.previewSel:G.sel;const tg=((mode==='play'||mode==='local'||mode==='train')&&G.sel||interactiveTheory&&T.sel||theoryPick&&T.sel||recordPreview&&A.previewSel)?c.moves({square:selected,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
+ const interactiveTheory=mode==='theory'&&T.guided,theoryPick=mode==='theory'&&T.pickAlternative,recordPreview=mode==='records'&&!!A.previewFen,selected=interactiveTheory||theoryPick?T.sel:recordPreview?A.previewSel:G.sel;const tg=readOption('legal',true)&&((mode==='play'||mode==='local'||mode==='train')&&G.sel||interactiveTheory&&T.sel||theoryPick&&T.sel||recordPreview&&A.previewSel)?c.moves({square:selected,verbose:true}).map(m=>m.to):[],ks=c.inCheck()?kingSq(c):null;
  for(let i=0;i<64;i++){const r=f?7-(i>>3):i>>3,k=f?7-(i&7):i&7,sq='abcdefgh'[k]+(8-r),p=bd[r][k],d=document.createElement('div');
-  d.dataset.square=sq;d.className='sq '+((r+k)%2?'d':'l')+(((mode==='play'||mode==='local'||mode==='train')&&sq===G.sel)||((interactiveTheory||theoryPick)&&sq===T.sel)||(recordPreview&&sq===A.previewSel)?' sel':'')+(interactiveTheory&&T.arrow&&sq===T.arrow.to?(T.arrow.kind==='wrong'?' coach-wrong':' coach-target'):'')+(last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
-  if(p){const s=document.createElement('span');s.className=p.color;s.dataset.piece=p.type;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
+  d.dataset.square=sq;d.className='sq '+((r+k)%2?'d':'l')+(((mode==='play'||mode==='local'||mode==='train')&&sq===G.sel)||((interactiveTheory||theoryPick)&&sq===T.sel)||(recordPreview&&sq===A.previewSel)?' sel':'')+(interactiveTheory&&T.arrow&&sq===T.arrow.to?(T.arrow.kind==='wrong'?' coach-wrong':' coach-target'):'')+(readOption('last',true)&&last&&(last.from===sq||last.to===sq)?' last':'')+(tg.includes(sq)?' tg'+(p?' hp':''):'')+(readOption('check',true)&&sq===ks?' chk':'')+(G.hint&&(G.hint.from===sq||G.hint.to===sq)?' hint':'');
+  if(p){const s=document.createElement('span');s.className=p.color+(mode==='local'&&p.color==='b'?' black-rotated':'');s.dataset.piece=p.type;s.textContent=GL[p.type]+'\uFE0E';d.append(s)}
   const screenRow=i>>3,screenCol=i&7;
-  if(screenCol===0){const label=document.createElement('small');label.className='coord rank';label.textContent=sq[1];d.append(label)}
-  if(screenRow===7){const label=document.createElement('small');label.className='coord file';label.textContent=sq[0];d.append(label)}
+  if(readOption('coords',true)&&screenCol===0){const label=document.createElement('small');label.className='coord rank';label.textContent=sq[1];d.append(label)}
+  if(readOption('coords',true)&&screenRow===7){const label=document.createElement('small');label.className='coord file';label.textContent=sq[0];d.append(label)}
   d.onclick=()=>tap(sq);b.append(d)}
  const sans=c.history(),mt=[];for(let i=0;i<sans.length;i+=2)mt.push((i/2+1)+'. '+sans[i]+(sans[i+1]?' '+sans[i+1]:''));
  let w=0;for(const r of bd)for(const p of r)if(p)w+=(p.color==='w'?1:-1)*V[p.type];
@@ -218,7 +238,7 @@ function overText(){const c=G.g;if(c.isCheckmate())return c.turn()===G.me?'Jaque
 const vib=()=>{try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}};
 function tap(sq){if(mode==='records'&&A.previewFen){recordPreviewTap(sq);return}if(mode==='theory'&&T.guided){lessonTap(sq);return}if(mode==='theory'&&T.pickAlternative){lessonExploreTap(sq);return}if((mode!=='play'&&mode!=='local'&&mode!=='train')||G.busy||G.over||G.pm||(mode==='play'&&G.g.turn()!==G.me)||(mode==='train'&&G.trainSolved&&!R.demo))return;const c=G.g;
  if(G.sel){const ms=c.moves({square:G.sel,verbose:true}).filter(x=>x.to===sq);
-  if(ms.length){if(ms[0].promotion){G.pm={from:G.sel,to:sq};return promo()}return mode==='train'?(R.demo?trainingDemoMove({from:G.sel,to:sq}):trainMove({from:G.sel,to:sq})):move({from:G.sel,to:sq})}}
+  if(ms.length){if(ms[0].promotion){if(readOption('queen',true))return move({from:G.sel,to:sq,promotion:'q'});G.pm={from:G.sel,to:sq};return promo()}return mode==='train'?(R.demo?trainingDemoMove({from:G.sel,to:sq}):trainMove({from:G.sel,to:sq})):move({from:G.sel,to:sq})}}
  const p=c.get(sq),sideToMove=c.turn();G.sel=p&&p.color===(mode==='local'||mode==='train'?sideToMove:G.me)?sq:null;render()}
 function promo(){const p=$('#pr');p.hidden=false;p.innerHTML='';for(const t of['q','r','b','n']){const b=document.createElement('button');b.textContent=GL[t]+'\uFE0E';b.onclick=()=>{if(mode==='records'){const m={...A.previewPm,promotion:t};A.previewPm=null;p.hidden=true;recordPreviewMove(m);return}const m={...(mode==='theory'&&T.guided?T.pm:G.pm),promotion:t};if(mode==='theory'&&T.guided){T.pm=null;p.hidden=true;lessonMove(m)}else{G.pm=null;p.hidden=true;mode==='train'?(R.demo?trainingDemoMove(m):trainMove(m)):move(m)}};p.append(b)}}
 async function animatePieceMoves(moves){
@@ -355,7 +375,7 @@ const lvl=()=>{const v=+$('#lv').value;localStorage.lvl=v;$('#lvt').textContent=
 const eloTxt=()=>$('#elo').textContent=localStorage.elo?'Rendimiento orientativo: '+localStorage.elo+'. No equivale a Elo FIDE; se calibra mejor con varias pruebas.':'Aún no has hecho el test de nivel.';
 function start(test){mode='play';tabs();G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.hint=null;$('#pr').hidden=true;G.test=test;G.me=$('#col').value;G.lvl=test?6:+$('#lv').value;createGameRecord(test?'Test de nivel':'Partida contra motor');
  $('#un').disabled=test;$('#hn').disabled=test;render();say(test?'Test de nivel con '+(G.me==='b'?'negras':'blancas')+': juega tu mejor partida, sin deshacer. Al terminar, se mide tu Elo.':turnText());if(G.me==='b')engineTurn()}
-function tabs(){$('#home').hidden=mode!=='home';$('#modeNav').hidden=mode==='home';$('#st').hidden=mode==='home';$('#pr').hidden=mode==='home';$('#board').hidden=mode==='home';$('#theoryNav').hidden=mode==='home'||mode!=='theory'||T.guided;$('#mv').hidden=mode!=='play'&&mode!=='local';$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#records').hidden=mode!=='records';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train'&&mode!=='records';$('#coachPanel').dataset.mode=mode;const actions=$('#trainActions'),tools=$('#coachPanel .coach-tools');if(actions&&tools){if(mode==='train')tools.append(actions);else $('#train').append(actions)}$('#reviewResults').hidden=mode!=='play'&&mode!=='local';const moveReview=$('#move-review');if(moveReview)moveReview.hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';$('#t5').className=mode==='records'?'on':'';
+function tabs(){$('#home').hidden=mode!=='home';$('#modeNav').hidden=mode==='home';$('#settings').hidden=mode!=='settings';$('#st').hidden=mode==='home';$('#pr').hidden=mode==='home';$('#board').hidden=mode==='home';$('#theoryNav').hidden=mode==='home'||mode!=='theory'||T.guided;$('#mv').hidden=mode!=='play'&&mode!=='local';$('#play').hidden=mode!=='play';$('#local').hidden=mode!=='local';$('#theory').hidden=mode!=='theory';$('#theoryNav').hidden=mode!=='theory'||T.guided;$('#train').hidden=mode!=='train';$('#records').hidden=mode!=='records';$('#coachPanel').hidden=mode!=='theory'&&mode!=='train'&&mode!=='records';$('#coachPanel').dataset.mode=mode;const actions=$('#trainActions'),tools=$('#coachPanel .coach-tools');if(actions&&tools){if(mode==='train')tools.append(actions);else $('#train').append(actions)}$('#reviewResults').hidden=mode!=='play'&&mode!=='local';const moveReview=$('#move-review');if(moveReview)moveReview.hidden=mode!=='play'&&mode!=='local';$('#t1').className=mode==='play'?'on':'';$('#t3').className=mode==='local'?'on':'';$('#t2').className=mode==='theory'?'on':'';$('#t4').className=mode==='train'?'on':'';$('#t5').className=mode==='records'?'on':'';
  if(mode==='theory'){say('Teoría: avanza jugada por jugada.')}render()}
 function progressText(){const done=JSON.parse(localStorage.chessLessonsDone||'[]');$('#courseProgress').textContent='Progreso del curso: '+done.length+' / '+L.length+' clases completadas'+(done.includes(T.lesson)?' · Esta clase está completada.':'');$('#markDone').textContent=done.includes(T.lesson)?'Clase completada ✓':'Marcar clase como completada'}
 function showLesson(){
@@ -763,5 +783,5 @@ $('#hn').onclick=async()=>{if(G.busy||G.over||G.test||G.g.turn()!==G.me)return;G
  G.hint={from:r.best.slice(0,2),to:r.best.slice(2,4)};render();say('Pista: '+G.hint.from+' → '+G.hint.to)};
 $('#un').onclick=()=>{if(G.busy||G.test)return;G.g.undo();if(G.g.turn()!==G.me)G.g.undo();G.over=false;G.sel=null;G.hint=null;render();say(turnText())};
 $('#rs').onclick=()=>{if(mode==='play'&&!G.over&&!G.busy){G.over=true;say('Te rendiste.');if(G.test)analyze()}};
-$('#lv').value=localStorage.lvl||8;lvl();eloTxt();setEng();mode='home';G.g=new Chess();G.me=$('#col').value;G.lvl=+$('#lv').value;G.test=false;tabs();$('#home').addEventListener('click',e=>{const b=e.target.closest('[data-enter]');if(!b)return;const target=b.dataset.enter;if(target==='settings'){mode='play';tabs();$('#col').focus();say('Ajusta tu color y el nivel del motor en esta pantalla.');if(G.g.turn()!==G.me)engineTurn();return}mode=target;tabs();if(mode==='theory')line_();else if(mode==='train')startTraining();else if(mode==='local'){G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.test=false;createGameRecord('Partida local');render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')}else if(mode==='play'){if(G.g.turn()!==G.me)engineTurn();else say(turnText())}else if(mode==='records'){A.previewFen=null;A.previewText='';G.hint=null;coachMessage('Entrenador en registros','Abre una partida y selecciona una jugada para ver la posición en el tablero. Las flechas serán sugerencias, no movimientos automáticos.','Tú eliges qué alternativa probar.');renderRecords()}});EP.then(()=>{if(!localStorage.elo&&!G.busy&&G.g.history().length===0)say('Pulsa «Test de nivel» para medir tu Elo y empezar desde ahí. O juega una partida libre.')});
+$('#lv').value=localStorage.lvl||8;lvl();eloTxt();setEng();mode='home';G.g=new Chess();G.me=$('#col').value;G.lvl=+$('#lv').value;G.test=false;tabs();$('#home').addEventListener('click',e=>{const b=e.target.closest('[data-enter]');if(!b)return;const target=b.dataset.enter;if(target==='settings'){mode='settings';tabs();loadSettings();say('Ajustes guardados en este dispositivo.');return}mode=target;tabs();if(mode==='theory')line_();else if(mode==='train')startTraining();else if(mode==='local'){G.g=new Chess();G.sel=null;G.over=false;G.busy=false;G.pm=null;G.test=false;createGameRecord('Partida local');render();say('Turno de blancas. Pasa el teléfono después de cada jugada.')}else if(mode==='play'){if(G.g.turn()!==G.me)engineTurn();else say(turnText())}else if(mode==='records'){A.previewFen=null;A.previewText='';G.hint=null;coachMessage('Entrenador en registros','Abre una partida y selecciona una jugada para ver la posición en el tablero. Las flechas serán sugerencias, no movimientos automáticos.','Tú eliges qué alternativa probar.');renderRecords()}});EP.then(()=>{if(!localStorage.elo&&!G.busy&&G.g.history().length===0)say('Pulsa «Test de nivel» para medir tu Elo y empezar desde ahí. O juega una partida libre.')});
 </script></body></html>
