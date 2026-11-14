@@ -61,7 +61,10 @@ for (let i = 36; i < 42; i++) {
     throw new Error('Falta la referencia verificable al vídeo fuente de la lección: ' + lessons[i][0]);
 }
 
-const operaLesson = lessons[42], operaPuzzle = lessons[43];
+const operaLessonIndex = lessons.findIndex(x => x[0].includes('La partida histórica · La partida de la Ópera'));
+const operaPuzzleIndex = operaLessonIndex + 1;
+const operaLesson = lessons[operaLessonIndex], operaPuzzle = lessons[operaPuzzleIndex];
+if (operaLessonIndex < 0 || !operaPuzzle) throw new Error('No se localizaron las clases históricas de Morphy.');
 if (!operaLesson?.[0]?.includes('Morphy') || !operaLesson[1]?.includes('17.Rd8#'))
   throw new Error('Falta la partida histórica completa de Morphy.');
 if (!operaLesson[3]?.includes('8.Nc3!') || !operaLesson[3]?.includes('3...Nf6') || !operaLesson[3]?.includes('10...Qb4+'))
@@ -74,7 +77,7 @@ if (operaReplay.history().length !== 33 || !operaReplay.isCheckmate())
   throw new Error('La partida de la Ópera debe reproducir 33 medias jugadas legales y terminar en mate.');
 if (!operaPuzzle?.[0]?.includes('Desafío interactivo') || !operaPuzzle[1]?.includes('16.Qb8+'))
   throw new Error('Falta el ejercicio interactivo del sacrificio de dama.');
-const operaPuzzleSetup = planSandbox.__planSetup.LESSON_STARTS[43];
+const operaPuzzleSetup = planSandbox.__planSetup.LESSON_STARTS[operaPuzzleIndex];
 if (!operaPuzzleSetup) throw new Error('No se generó la posición histórica después de 15...Nxd7.');
 const operaPuzzleMoves = parseMoves(operaPuzzleSetup.moves);
 if (operaPuzzleMoves.join(' ') !== 'Qb8+ Nxb8 Rd8#')
