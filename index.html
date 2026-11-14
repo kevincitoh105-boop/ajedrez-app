@@ -322,7 +322,7 @@ function openingBookMove(fen,san){
  '1.e4 e6 2.d4 d5 3.Nc3 Nf6 4.e5 Nfd7 5.f4 c5 6.Nf3 Nc6'
  ];
  for(const line of lines){
-  const tokens=line.replace(/\\d+\\./g,' ').trim().split(/\\s+/),c=new Chess();
+  const tokens=line.replace(/\d+\./g,' ').trim().split(/\s+/),c=new Chess();
   for(const token of tokens){
    if(c.fen()===fen){if(token===san)return line.split(' ')[0]+' teoría';break}
    try{c.move(token)}catch(e){break}
