@@ -17,7 +17,8 @@ function section(start, end) {
 // and must never depend on the engine's busy flag.
 const premove = section('function premoveTap(', '\nasync function applyQueuedPremove');
 assert.match(premove, /mode==='local'/);
-assert.match(premove, /mode==='play'&&!G\.busy/);\nassert.match(premove, /mode==='local'&&G\.busy/);
+assert.match(premove, /mode==='play'&&!G\.busy/);
+assert.match(premove, /mode==='local'&&G\.busy/);
 const tap = section('function tap(', '\nfunction promo');
 assert.match(tap, /mode==='local'&&readOption\('premove',false\)/);
 assert.match(tap, /piece\.color!==G\.g\.turn\(\)/);
