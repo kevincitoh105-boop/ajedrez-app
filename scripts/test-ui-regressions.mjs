@@ -74,6 +74,11 @@ const hintHandler = html.slice(html.indexOf("$('#trainHint').onclick="), html.in
 assert.match(hintHandler, /if\(best\.captured\)/);
 assert.doesNotMatch(hintHandler, /best\.captured\s*\|\|\s*captures/);
 
+const localResult = section('function overText(', '\nconst vib');
+assert.match(localResult, /mode==='local'/);
+assert.match(localResult, /c\.turn\(\)==='w'\?'negras':'blancas'/);
+assert.match(html, /Mensajes locales \(este teléfono\)/);
+
 // Check indication and red premove highlighting are explicitly styled.
 assert.match(html, /#board \.sq\.chk\{[^}]*!important/);
 assert.match(html, /\.sq\.premove-from/);
