@@ -37,6 +37,8 @@ jobs:
         run: npm run prepare-www
       - name: Validate PupiloChess lesson lines
         run: npm run test:lessons
+      - name: Test UI regressions
+        run: npm run test:ui
       - name: Include offline Stockfish WASM
         run: node scripts/get-stockfish.js
         env:
