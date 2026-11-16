@@ -33,6 +33,7 @@ const blackMove = game.moves({ square: 'e7', verbose: true }).find(m => m.to ===
 assert.ok(blackMove, 'Queued black e5 should remain legal after 1.e4');
 game.move({ from: blackMove.from, to: blackMove.to });
 assert.equal(game.turn(), 'w');
+game.move('Nf3');
 const whiteTurnView = new Chess(game.fen().replace(/ ([wb]) /, ' w '));
 assert.ok(whiteTurnView.moves({ square: 'd2', verbose: true }).some(m => m.to === 'd4'));
 game.move('Nc6');
