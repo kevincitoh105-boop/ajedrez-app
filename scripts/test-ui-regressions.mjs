@@ -70,7 +70,7 @@ assert.match(explanation, /no detecto una ruptura de peón inmediata verificable
 // legal capture elsewhere in the position.
 const hintHandler = html.slice(html.indexOf("$('#trainHint').onclick="), html.indexOf("$('#trainReveal').onclick="));
 assert.match(hintHandler, /if\(best\.captured\)/);
-assert.doesNotMatch(hintHandler, /best\.captured\|\|captures\.length/);
+assert.doesNotMatch(hintHandler, /best\.captured\s*\|\|\s*captures/);
 
 // Check indication and red premove highlighting are explicitly styled.
 assert.match(html, /#board \.sq\.chk\{[^}]*!important/);
@@ -78,7 +78,8 @@ assert.match(html, /\.sq\.premove-from/);
 assert.match(html, /\.sq\.premove-to/);
 
 // The coach asset is included in the Android web bundle and eagerly requested.
-assert.ok(fs.existsSync('assets/coach.webp'), 'Coach image must exist in the repository');\nassert.ok(fs.existsSync('www/assets/coach.webp'), 'Coach image must be copied into the Android web bundle');
+assert.ok(fs.existsSync('assets/coach.webp'), 'Coach image must exist in the repository');
+assert.ok(fs.existsSync('www/assets/coach.webp'), 'Coach image must be copied into the Android web bundle');
 assert.match(prepare, /assets\/coach\.webp/);
 assert.match(html, /loading="eager" decoding="async"/);
 
