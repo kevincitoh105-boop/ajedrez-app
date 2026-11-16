@@ -64,7 +64,7 @@ assert.match(html, /hint\.kind==='wrong'\?'#dc4545':'#299c58'/);
 // The explanation must name concrete attacked squares and only claim a pawn
 // break when a candidate can be described from the current board.
 const explanation = section('function explainTrainingMove(', '\nasync function beginTrainingDemo');
-assert.match(explanation, /controls casillas libres como/);
+assert.match(explanation, /controla casillas libres como/);
 assert.match(explanation, /rupturas candidatas para calcular/);
 assert.match(explanation, /no detecto una ruptura de peón inmediata verificable/);
 
