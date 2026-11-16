@@ -78,7 +78,7 @@ assert.match(html, /\.sq\.premove-from/);
 assert.match(html, /\.sq\.premove-to/);
 
 // The coach asset is included in the Android web bundle and eagerly requested.
-assert.ok(fs.existsSync('assets/coach.webp'), 'Coach image must exist in the repository');
+assert.ok(fs.existsSync('assets/coach.webp'), 'Coach image must exist in the repository');\nassert.ok(fs.existsSync('www/assets/coach.webp'), 'Coach image must be copied into the Android web bundle');
 assert.match(prepare, /assets\/coach\.webp/);
 assert.match(html, /loading="eager" decoding="async"/);
 
