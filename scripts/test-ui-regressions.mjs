@@ -79,6 +79,10 @@ assert.match(localResult, /mode==='local'/);
 assert.match(localResult, /c\.turn\(\)==='w'\?'negras':'blancas'/);
 assert.match(html, /Mensajes locales \(este teléfono\)/);
 
+// Every square receives an explicit inline background color, independent of WebView class styling.
+assert.match(html, /palette=\(\{classic:\['#f7fbff','#285b7c'\],blue:\['#f1f5f9','#3976a8'\],wood:\['#f7fbff','#9b6845'\],slate:\['#cbd5e1','#475569'\],purple:\['#e9d5ff','#7653a6'\]\}\)/);
+assert.match(html, /d\.style\.setProperty\('background-color',\(\(r\+k\)%2\)\?palette\[1\]:palette\[0\],'important'\)/);
+
 // Check indication and red premove highlighting are explicitly styled.
 assert.match(html, /#board \.sq\.chk\{[^}]*!important/);
 assert.match(html, /\.sq\.premove-from/);
