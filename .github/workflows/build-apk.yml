@@ -24,13 +24,13 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: maestro-ajedrez-debug-signing-v1
-      - name: Ensure persistent Android debug signing key exists
+      - name: Verify persistent Android signing key
         run: |
-          mkdir -p "$HOME/.android"
-          if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -noprompt -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          fi
-          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey
+          test -f "$HOME/.android/debug.keystore" || { echo "::error::Persistent signing key is missing. Refusing to generate a new key because that would break APK updates."; exit 1; }
+          FINGERPRINT="$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | sed -n 's/^[[:space:]]*SHA256: //p')"
+          EXPECTED="8E:29:1C:37:D3:CF:4B:6B:58:73:0C:C6:BC:F2:B2:DB:80:95:17:2A:5F:53:F7:1F:2F:01:7C:37:EE:00:D7:96"
+          test "$FINGERPRINT" = "$EXPECTED" || { echo "::error::Android signing certificate changed. Refusing to publish an incompatible APK."; exit 1; }
+          echo "Persistent Android signing certificate verified: $FINGERPRINT"
       - name: Install dependencies
         run: npm install
       - name: Prepare web app
