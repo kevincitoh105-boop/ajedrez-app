@@ -122,7 +122,7 @@ for (const san of switchMoves) switchBoard.move(san);
 if (switchBoard.history().length !== 9 || !switchBoard.isCheck())
   throw new Error('La fase de jaques por detrás de Philidor debe terminar con un jaque legal.');
 if (!html.includes("if(/Philidor/i.test(l[0]))$('#lessonSide').value='b'") ||
-    !html.includes("if(/Caro-Kann|Defensa Ortodoxa|Ortodoxa|Philidor/i.test"))
+    !html.includes("return /Caro-Kann|Defensa Ortodoxa|Ortodoxa|Philidor/i.test"))
   throw new Error('Las clases Philidor deben orientar el tablero y seleccionar negras para la práctica.');
 
 const plansStart = html.indexOf('const MIDGAME_PLANS=');
