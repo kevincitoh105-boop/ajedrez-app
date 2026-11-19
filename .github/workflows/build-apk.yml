@@ -35,7 +35,7 @@ jobs:
         run: npm install
       - name: Prepare web app
         run: npm run prepare-www
-      - name: Validate PupiloChess lesson lines
+      - name: Validate course lessons, endgame positions and legal lines
         run: npm run test:lessons
       - name: Test UI regressions
         run: npm run test:ui

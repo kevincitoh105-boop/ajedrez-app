@@ -52,7 +52,7 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 82) throw new Error('Se esperaban 82 lecciones (74 existentes + 8 clases didácticas originales nuevas); encontradas: ' + lessons.length);
+if (lessons.length !== 85) throw new Error('Se esperaban 82 lecciones (74 existentes + 8 clases didácticas originales nuevas); encontradas: ' + lessons.length);
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
@@ -86,6 +86,44 @@ const operaPuzzleBoard = new Chess(operaPuzzleSetup.fen);
 for (const san of operaPuzzleMoves) operaPuzzleBoard.move(san);
 if (!operaPuzzleBoard.isCheckmate())
   throw new Error('El ejercicio de Morphy no termina en jaque mate legal.');
+
+const lucenaIndex = lessons.findIndex(x => x[0].includes('posición de Lucena'));
+const philidorIndex = lessons.findIndex(x => x[0].includes('defensa Philidor y barrera'));
+const philidorSwitchIndex = lessons.findIndex(x => x[0].includes('cambiar a los jaques por detrás'));
+for (const [name, index] of [['Lucena', lucenaIndex], ['Philidor', philidorIndex], ['Philidor rear checks', philidorSwitchIndex]]) {
+  if (index < 0 || !planSandbox.__planSetup.LESSON_STARTS[index])
+    throw new Error('Falta la posición interactiva de la lección ' + name + '.');
+  const lesson = lessons[index];
+  if (!lesson[2] || !lesson[3] || !lesson[4] || !lesson[5] || !lesson[6])
+    throw new Error('La lección ' + name + ' debe incluir objetivo, explicación, errores, categoría y fuentes.');
+}
+const lucenaSetup = planSandbox.__planSetup.LESSON_STARTS[lucenaIndex];
+const lucenaBoard = new Chess(lucenaSetup.fen);
+for (const san of parseMoves(lucenaSetup.moves)) lucenaBoard.move(san);
+if (lucenaBoard.history().length !== 11 || lucenaBoard.turn() !== 'b')
+  throw new Error('La línea principal de Lucena no reproduce el puente completo.');
+const lucenaAlternative = new Chess(lucenaSetup.fen);
+lucenaAlternative.move('Ke7');
+lucenaAlternative.move('Re2+');
+if (!lucenaAlternative.isCheck())
+  throw new Error('La alternativa 1.Ke7? Re2+! de Lucena debe ser un jaque legal.');
+const philidorSetup = planSandbox.__planSetup.LESSON_STARTS[philidorIndex];
+const philidorBoard = new Chess(philidorSetup.fen);
+for (const san of parseMoves(philidorSetup.moves)) philidorBoard.move(san);
+if (philidorBoard.history().length !== 9)
+  throw new Error('La línea de espera de Philidor no se reproduce completa.');
+const philidorPremature = new Chess(philidorSetup.fen);
+philidorPremature.move('Ra1');
+philidorPremature.move('Ke6');
+const switchSetup = planSandbox.__planSetup.LESSON_STARTS[philidorSwitchIndex];
+const switchBoard = new Chess(switchSetup.fen);
+const switchMoves = parseMoves(switchSetup.moves);
+for (const san of switchMoves) switchBoard.move(san);
+if (switchBoard.history().length !== 9 || !switchBoard.isCheck())
+  throw new Error('La fase de jaques por detrás de Philidor debe terminar con un jaque legal.');
+if (!html.includes("if(/Philidor/i.test(l[0]))$('#lessonSide').value='b'") ||
+    !html.includes("if(/Caro-Kann|Defensa Ortodoxa|Ortodoxa|Philidor/i.test"))
+  throw new Error('Las clases Philidor deben orientar el tablero y seleccionar negras para la práctica.');
 
 const plansStart = html.indexOf('const MIDGAME_PLANS=');
 const plansEnd = html.indexOf('\nfunction renderMiddlegamePlans', plansStart);
@@ -243,7 +281,10 @@ const requiredFeatures = [
   ['clasificación de jugada teórica como de manual', 'DE MANUAL · '],
   ['pistas permanentes del entrenador', 'if(T.guided&&!T.c.isGameOver())await guidedHint();'],
   ['curso ampliado de cálculo', 'Clase 75 · Cálculo de variantes'],
-  ['curso ampliado de estrategia', 'Clase 82 · Convertir una ventaja sin precipitarse']
+  ['curso ampliado de estrategia', 'Clase 82 · Convertir una ventaja sin precipitarse'],
+  ['técnica de Lucena y puente', 'Clase 83 · Finales de torre: la posición de Lucena'],
+  ['barrera defensiva de Philidor', 'Clase 84 · Finales de torre: defensa Philidor'],
+  ['jaques por detrás en Philidor', 'Clase 85 · Finales de torre: cambiar a los jaques por detrás']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
