@@ -60,8 +60,48 @@ jobs:
       - name: Set increasing Android version code
         run: |
           node -e "const fs=require('fs');const p='android/app/build.gradle';let s=fs.readFileSync(p,'utf8');const n=Number(process.env.GITHUB_RUN_NUMBER)||1;s=s.replace(/versionCode\\s+\\d+/, 'versionCode '+n);s=s.replace(/versionName\\s+['\"][^'\"]+['\"]/, 'versionName \\\"2.1.'+n+'\\\"');fs.writeFileSync(p,s);console.log('Android versionCode:',n)"
+      - name: Bind debug build to persistent Android signing key
+        run: |
+          test -f "$HOME/.android/debug.keystore"
+          node <<'NODE'
+          const fs = require('fs');
+          const path = 'android/app/build.gradle';
+          let source = fs.readFileSync(path, 'utf8');
+          const marker = '// CI persistent Android debug signing';
+          if (!source.includes(marker)) {
+            source += `
+          
+          ${marker}
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file(System.getenv('HOME') + '/.android/debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+              buildTypes {
+                  debug {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+          `;
+            fs.writeFileSync(path, source);
+          }
+          NODE
       - name: Build APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+      - name: Verify APK uses persistent Android signing key
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          CERT_OUTPUT="$("$APKSIGNER" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk)"
+          echo "$CERT_OUTPUT"
+          ACTUAL="$(printf '%s\\n' "$CERT_OUTPUT" | sed -n 's/.*certificate SHA-256 digest: //p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          EXPECTED="8E29C37D3CF4B6B58730CC6BCF2B2DB8095172A5F53F71F2F017C37EE00D796"
+          test "$ACTUAL" = "$EXPECTED" || { echo "::error::APK signer does not match the persistent Android key. Actual: $ACTUAL"; exit 1; }
       - name: Verify custom launcher icon in APK
         run: |
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)"
@@ -72,7 +112,7 @@ jobs:
           "$AAPT" dump resources android/app/build/outputs/apk/debug/app-debug.apk | grep -E "ic_launcher(_round|_foreground)?"
           cp android/app/build/outputs/apk/debug/app-debug.apk Chess-Master.apk
       - name: Verify Stockfish is inside APK
-        run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'assets/public/engine/.*\.wasm'
+        run: unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'assets/public/engine/.*\\.wasm'
       - uses: actions/upload-artifact@v5
         with:
           name: Chess-Master
