@@ -96,7 +96,7 @@ assert.match(html, /loading="eager" decoding="async"/);
 assert.match(html, /avatar\.decode\(\)\.then/);
 
 assert.match(html, /'optPremove'\]\.forEach\(id=>\$\('#'\+id\)\.onchange=saveSettingOptions\)/);
-assert.doesNotMatch(html, /readOption\('premove',true\)/);
+assert.doesNotMatch(html, /readOption\('premove',false\)/);
 assert.match(html, /readOption\('premove',true\)/);
 assert.match(html, /function appBack\(\)/);
 assert.match(html, /window\.addEventListener\('popstate'/);
