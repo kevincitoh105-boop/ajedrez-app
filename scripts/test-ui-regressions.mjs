@@ -103,4 +103,6 @@ assert.match(html, /epoch!==gameEpoch\|\|mode!=='play'/);
 assert.match(html, /const modeGames=\{play:null,local:null/);
 assert.match(html, /function enterPlay\(\)/);
 assert.match(html, /function enterLocal\(\)/);
+assert.match(html, /epoch!==gameEpoch\|\|mode!==expectedMode/);
+assert.match(html, /async function move\(m\)\{if\(G\.busy\|\|G\.over\)return;const epoch=gameEpoch,expectedMode=mode/);
 console.log('UI regression checks passed: local premoves both colors, no auto-play in continuation, independent coach scroll, red mistake arrow, grounded hints, check/premove indicators, coach asset.');
