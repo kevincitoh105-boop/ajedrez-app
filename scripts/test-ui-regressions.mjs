@@ -99,5 +99,8 @@ assert.match(html, /'optPremove'\]\.forEach\(id=>\$\('#'\+id\)\.onchange=saveSet
 assert.match(html, /function appBack\(\)/);
 assert.match(html, /window\.addEventListener\('popstate'/);
 assert.match(html, /A\.review=null/);
-assert.match(html, /gameEpoch!==epoch\|\|mode!=='play'/);
+assert.match(html, /epoch!==gameEpoch\|\|mode!=='play'/);
+assert.match(html, /const modeGames=\{play:null,local:null/);
+assert.match(html, /function enterPlay\(\)/);
+assert.match(html, /function enterLocal\(\)/);
 console.log('UI regression checks passed: local premoves both colors, no auto-play in continuation, independent coach scroll, red mistake arrow, grounded hints, check/premove indicators, coach asset.');
