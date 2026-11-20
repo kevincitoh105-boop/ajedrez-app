@@ -20,7 +20,7 @@ assert.match(premove, /mode==='local'/);
 assert.match(premove, /mode==='play'&&!G\.busy/);
 assert.match(premove, /mode==='local'&&G\.busy/);
 const tap = section('function tap(', '\nfunction promo');
-assert.match(tap, /mode==='local'&&readOption\('premove',false\)/);
+assert.match(tap, /mode==='local'&&readOption\('premove',true\)/);
 assert.match(tap, /piece\.color!==G\.g\.turn\(\)/);
 
 // Simulate a queued black move after White's move, then a queued white move
@@ -96,7 +96,7 @@ assert.match(html, /loading="eager" decoding="async"/);
 assert.match(html, /avatar\.decode\(\)\.then/);
 
 assert.match(html, /'optPremove'\]\.forEach\(id=>\$\('#'\+id\)\.onchange=saveSettingOptions\)/);
-assert.doesNotMatch(html, /readOption\('premove',false\)/);
+assert.doesNotMatch(html, /readOption\('premove',true\)/);
 assert.match(html, /readOption\('premove',true\)/);
 assert.match(html, /function appBack\(\)/);
 assert.match(html, /window\.addEventListener\('popstate'/);
