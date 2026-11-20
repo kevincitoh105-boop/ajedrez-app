@@ -80,7 +80,7 @@ assert.match(localResult, /c\.turn\(\)==='w'\?'negras':'blancas'/);
 assert.match(html, /Mensajes locales \(este teléfono\)/);
 
 // Every square receives an explicit inline background color, independent of WebView class styling.
-assert.match(html, /palette=\(\{classic:\['#f7fbff','#285b7c'\],blue:\['#f1f5f9','#3976a8'\],wood:\['#f7fbff','#9b6845'\],slate:\['#cbd5e1','#475569'\],purple:\['#e9d5ff','#7653a6'\]\}\)/);
+assert.match(html, /palette=\(\{classic:\['#f7fbff','#2e8b57'\],blue:\['#f1f5f9','#3976a8'\],wood:\['#f7fbff','#9b6845'\],slate:\['#cbd5e1','#475569'\],purple:\['#e9d5ff','#7653a6'\]\}\)/);
 assert.match(html, /d\.style\.setProperty\('background-color',\(\(r\+k\)%2\)\?palette\[1\]:palette\[0\],'important'\)/);
 
 // Check indication and red premove highlighting are explicitly styled.
@@ -93,5 +93,11 @@ assert.ok(fs.existsSync('assets/coach.webp'), 'Coach image must exist in the rep
 assert.ok(fs.existsSync('www/assets/coach.webp'), 'Coach image must be copied into the Android web bundle');
 assert.match(prepare, /assets\/coach\.webp/);
 assert.match(html, /loading="eager" decoding="async"/);
+assert.match(html, /avatar\.decode\(\)\.then/);
 
+assert.match(html, /'optPremove'\]\.forEach\(id=>\$\('#'\+id\)\.onchange=saveSettingOptions\)/);
+assert.match(html, /function appBack\(\)/);
+assert.match(html, /window\.addEventListener\('popstate'/);
+assert.match(html, /A\.review=null/);
+assert.match(html, /gameEpoch!==epoch\|\|mode!=='play'/);
 console.log('UI regression checks passed: local premoves both colors, no auto-play in continuation, independent coach scroll, red mistake arrow, grounded hints, check/premove indicators, coach asset.');
