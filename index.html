@@ -920,7 +920,7 @@ $('#guidedRetry').onclick=()=>openGuidedLesson(true);
 $('#guidedHint').onclick=()=>{if(mode!=='theory'){openGuidedLesson(false);return}guidedHint()};
 $('#guidedNext').onclick=()=>{if(mode!=='theory'){openGuidedLesson(false);return}guidedNext()};$('#markDone').onclick=()=>{const done=JSON.parse(localStorage.chessLessonsDone||'[]');if(!done.includes(T.lesson))done.push(T.lesson);localStorage.chessLessonsDone=JSON.stringify(done);progressText();say('Clase guardada como completada en este teléfono.')};
 $('#homeTab').onclick=()=>{saveActiveGame();gameEpoch++;G.busy=false;mode='home';A.review=null;tabs();say('Elige qué quieres hacer.');};
-function appBack(){if(mode==='home')return;if(mode==='records'&&!$('#recordDetail').hidden){A.previewFen=null;A.previewText='';A.previewSel=null;$('#recordDetail').hidden=true;$('#recordsList').hidden=false;$('#recordsBack').hidden=true;$('#recordPreviewNote').hidden=true;render();return}gameEpoch++;G.busy=false;G.premove=null;G.premoveSel=null;G.premoveSide=null;G.sel=null;G.pm=null;A.review=null;mode='home';tabs();say('Volviste al inicio.');}
+function appBack(){if(mode==='home')return;if(mode==='records'&&!$('#recordDetail').hidden){A.previewFen=null;A.previewText='';A.previewSel=null;$('#recordDetail').hidden=true;$('#recordsList').hidden=false;$('#recordsBack').hidden=true;$('#recordPreviewNote').hidden=true;render();return}saveActiveGame();gameEpoch++;G.busy=false;G.premove=null;G.premoveSel=null;G.premoveSide=null;G.sel=null;G.pm=null;A.review=null;mode='home';tabs();say('Volviste al inicio.');}
 window.history.pushState({chessApp:true},'','#app');
 window.addEventListener('popstate',()=>{if(mode==='home')return;appBack();window.history.pushState({chessApp:true},'','#app');});
 
