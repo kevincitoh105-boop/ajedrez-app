@@ -56,7 +56,7 @@ assert.ok(capturePosition.moves({ square: 'a1', verbose: true }).some(m => m.to 
 // In local mode the move is committed and snapshotted before any asynchronous
 // engine analysis, so the board cannot fall back to its previous position.
 const localMove = section('async function move(m){', '\nfunction openingBookMove');
-assert.match(localMove, /if\(mode==='local'\)\{[\\s\\S]*?const played=game\.move\(m\)/);
+assert.ok(localMove.includes("if(mode==='local'){") && localMove.includes('const played=game.move(m)'));
 assert.match(localMove, /modeGames\.local=snapshotGame\(\)/);
 assert.ok(localMove.indexOf('const played=game.move(m)') < localMove.indexOf('await diagnoseMove'),
   'Local move must be committed before analysis yields');
