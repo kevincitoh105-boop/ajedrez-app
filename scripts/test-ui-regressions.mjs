@@ -20,8 +20,8 @@ assert.match(premove, /mode==='local'/);
 assert.match(premove, /mode==='play'&&!G\.busy/);
 assert.match(premove, /mode==='local'&&G\.busy/);
 const tap = section('function tap(', '\nfunction promo');
-assert.match(tap, /mode==='local'&&readOption\('premove',true\)/);
-assert.match(tap, /piece\.color!==G\.g\.turn\(\)/);
+assert.match(tap, /shouldInterceptLocalPremove\(sq\)/);
+assert.match(tap, /function shouldInterceptLocalPremove\(sq\)/);
 
 // Simulate a queued black move after White's move, then a queued white move
 // after Black's move. This checks both colors and the side-to-move transition.
@@ -41,6 +41,25 @@ const whiteMove = game.moves({ square: 'd2', verbose: true }).find(m => m.to ===
 assert.ok(whiteMove, 'Queued white d4 should remain legal after ...Nc6');
 game.move({ from: whiteMove.from, to: whiteMove.to });
 assert.equal(game.turn(), 'b');
+
+
+// A normal local capture must take precedence over the optional premove
+// selector. The selector may only intercept an opponent piece when it is not
+// the legal destination of the currently selected piece.
+const localPremove = section('function shouldInterceptLocalPremove(', '\\nfunction tap');
+assert.match(localPremove, /if\(G\.sel&&G\.g\.moves\(\{square:G\.sel,verbose:true\}\)\.some\(m=>m\.to===sq\)\)return false/);
+const capturePosition = new Chess('r6k/8/8/8/8/8/p7/R6K w - - 0 1');
+assert.ok(capturePosition.moves({ square: 'a1', verbose: true }).some(m => m.to === 'a2'),
+  'The selected rook must be able to capture the enemy pawn on a2');
+
+// In local mode the move is committed and snapshotted before any asynchronous
+// engine analysis, so the board cannot fall back to its previous position.
+const localMove = section('async function move(m){', '\\nfunction openingBookMove');
+assert.match(localMove, /if\(mode==='local'\)\{[\\s\\S]*?const played=game\.move\(m\)/);
+assert.match(localMove, /modeGames\.local=snapshotGame\(\)/);
+assert.ok(localMove.indexOf('const played=game.move(m)') < localMove.indexOf('await diagnoseMove'),
+  'Local move must be committed before analysis yields');
+assert.match(localMove, /G\.g===game/);
 
 // Conditional recapture premove: the destination is occupied by a friendly
 // piece before the opponent captures it, so it is not currently legal.
