@@ -480,7 +480,7 @@ async function engineTurn(){if(mode!=='play')return;const epoch=gameEpoch;G.busy
  if(!b||b==='(none)'){G.busy=false;const done=overText();done?finish(done):say('El motor no devolvió una jugada. Puedes volver a intentarlo o iniciar otra partida.');return}
  const candidate=G.g.moves({verbose:true}).find(x=>x.from===b.slice(0,2)&&x.to===b.slice(2,4)&&(!b[4]||x.promotion===b[4]));if(!candidate){G.busy=false;say('El motor devolvió una jugada no legal; no se aplicó.');return}
  await animatePieceMoves(animationForMove(candidate,G.g.turn()));if(epoch!==gameEpoch||mode!=='play')return;G.g.move({from:b.slice(0,2),to:b.slice(2,4),promotion:b[4]});saveCurrentRecord();G.busy=false;vib();render();const o=overText();if(o){finish(o);return}if(await applyQueuedPremove()){if(epoch!==gameEpoch||mode!=='play')return;const done=overText();if(done){finish(done);return}await engineTurn();return}say(turnText())}
-function finish(t){G.over=true;saveCurrentRecord(t);say(t);if(G.test)analyze()}
+function finish(t){G.over=true;if(mode==='local'){if(localClock.interval)clearInterval(localClock.interval);localClock.interval=null;localClock.active=null;localClock.paused=null;localClock.last=0;renderLocalClock()}saveCurrentRecord(t);say(t);if(G.test)analyze()}
 async function analyze(){if(!sf)return say('El test necesita Stockfish. '+('Motor: '+engName+(engErr?' · '+engErr:'')));
  const h=G.g.history({verbose:true}),n=h.filter(m=>m.color===G.me).length;if(n<20)return say('Muestra insuficiente: juega al menos 20 jugadas con '+(G.me==='b'?'negras':'blancas')+' y repite el test.');
  G.busy=true;const c=new Chess();let tot=0,k=0;
