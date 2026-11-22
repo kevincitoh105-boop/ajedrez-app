@@ -42,6 +42,23 @@ assert.ok(whiteMove, 'Queued white d4 should remain legal after ...Nc6');
 game.move({ from: whiteMove.from, to: whiteMove.to });
 assert.equal(game.turn(), 'b');
 
+// Conditional recapture premove: the destination is occupied by a friendly
+// piece before the opponent captures it, so it is not currently legal.
+const recaptureFen = '7k/8/4p3/3p4/4P3/8/8/K7 w - - 0 1';
+const recaptureSetup = new Chess(recaptureFen);
+const blackView = new Chess(recaptureFen.replace(/ ([wb]) /, ' b '));
+assert.equal(blackView.get('d5').color, 'b');
+assert.equal(blackView.moves({ square: 'e6', verbose: true }).some(m => m.to === 'd5'), false);
+const capturedPawn = recaptureSetup.move({ from: 'e4', to: 'd5' });
+assert.equal(capturedPawn.captured, 'p');
+assert.ok(recaptureSetup.moves({ square: 'e6', verbose: true }).some(m => m.to === 'd5'),
+  'e6xd5 must become legal only after White captures on d5');
+const noCapture = new Chess(recaptureFen);
+noCapture.move({ from: 'e4', to: 'e5' });
+const noCaptureLast = noCapture.history({ verbose: true }).slice(-1)[0];
+assert.equal(!!(noCaptureLast.captured && noCaptureLast.to === 'd5'), false,
+  'the queued recapture must be discarded when the opponent does not capture on d5');
+
 // A continuation from a training position is user-controlled for both sides.
 // The engine may suggest moves, but must not apply the opponent's reply.
 const beginDemo = section('async function beginTrainingDemo(', '\nasync function nextTrainingDemoMove');
