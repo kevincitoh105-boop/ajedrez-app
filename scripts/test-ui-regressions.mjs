@@ -64,6 +64,7 @@ assert.match(html, /id="localMinutes"/);
 for (const minutes of ['3','5','10','20']) assert.match(html, new RegExp('<option value="'+minutes+'"'));
 assert.match(html, /function tickLocalClock\(\)/);
 assert.match(html, /function finishLocalOnTime\(loser\)/);
+assert.match(html, /function finish\(t\)\{G\.over=true;if\(mode==='local'\)\{if\(localClock\.interval\)clearInterval/);
 assert.match(html, /Tiempo agotado\. Ganan /);
 assert.match(html, /localClockBeforeMove\(mover\)/);
 assert.match(html, /localClockAfterMove\(mover\)/);
