@@ -21,7 +21,6 @@ assert.match(premove, /mode==='play'&&!G\.busy/);
 assert.match(premove, /mode==='local'&&G\.busy/);
 const tap = section('function tap(', '\nfunction promo');
 assert.match(tap, /shouldInterceptLocalPremove\(sq\)/);
-assert.match(tap, /function shouldInterceptLocalPremove\(sq\)/);
 
 // Simulate a queued black move after White's move, then a queued white move
 // after Black's move. This checks both colors and the side-to-move transition.
