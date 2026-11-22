@@ -47,6 +47,8 @@ assert.equal(game.turn(), 'b');
 // the legal destination of the currently selected piece.
 const localPremove = section('function shouldInterceptLocalPremove(', '\nfunction tap');
 assert.match(localPremove, /if\(G\.sel&&G\.g\.moves\(\{square:G\.sel,verbose:true\}\)\.some\(m=>m\.to===sq\)\)return false/);
+assert.ok(localPremove.indexOf('if(G.sel&&G.g.moves') < localPremove.indexOf('if(G.premoveSel)'),
+  'A legal move or capture must take priority over the optional premove selection');
 const capturePosition = new Chess('r6k/8/8/8/8/8/p7/R6K w - - 0 1');
 assert.ok(capturePosition.moves({ square: 'a1', verbose: true }).some(m => m.to === 'a2'),
   'The selected rook must be able to capture the enemy pawn on a2');
