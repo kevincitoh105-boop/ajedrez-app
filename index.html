@@ -426,12 +426,12 @@ async function diagnoseMove(before,afterFen,mover,san,uci){
   const loss=Math.max(0,Math.round(bestPerspective-playedPerspective));
   const played=new Chess(before),actual=played.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
   const after=new Chess(afterFen),facts=[];
-  if(actual.captured)facts.push('Capturaste '+pieceName(actual.captured)+'. Comprueba si la pieza capturada estaba defendida y qué queda desprotegido después del cambio.');
+  if(actual.captured){const defendedBy=new Chess(before).attackers(actual.to,mover==='w'?'b':'w').length,attackersBefore=new Chess(before).attackers(actual.to,mover).length;facts.push('Capturaste '+pieceName(actual.captured)+' en '+actual.to+'. Antes del cambio, esa pieza tenía '+defendedBy+' defensa(s) y estaba atacada por '+attackersBefore+' pieza(s) tuyas; calcula la recaptura concreta y el balance de piezas que queda tras el intercambio.');}
   if(actual.san.includes('+'))facts.push('Diste jaque. Un jaque obliga al rival a responder, pero no siempre mejora tu posición: comprueba si ganas algo o solo ayudas a desarrollar sus piezas.');
   if(actual.san.includes('#'))facts.push('¡Jaque mate! El rey rival no tiene ninguna respuesta legal.');
   if(actual.flags.includes('k')||actual.flags.includes('q'))facts.push('Enrocaste: apartas al rey del centro y conectas las torres.');
   if(['e4','d4','e5','d5'].includes(actual.to))facts.push('Influyes directamente en el centro, que da espacio y casillas de entrada a tus piezas.');
-  if(actual.piece==='n'||actual.piece==='b')facts.push('Desarrollaste una pieza menor. Comprueba si controla casillas centrales y si puede ser expulsada ganando un tiempo.');
+  if(actual.piece==='n'||actual.piece==='b'){const enemy=mover==='w'?'b':'w',attacks=after.attackers(actual.to,enemy).length,guards=after.attackers(actual.to,mover).length,center=after.moves({square:actual.to,verbose:true}).filter(x=>['d4','e4','d5','e5','c4','f4','c5','f5'].includes(x.to)).map(x=>x.to);facts.push('Desarrollaste el '+pieceName(actual.piece)+' en '+actual.to+'. Desde esa casilla puede influir sobre '+(center.length?'casillas centrales como '+center.slice(0,4).join(', '):'las casillas que se indican en el tablero al calcular sus movimientos')+'. Ahora recibe '+attacks+' ataque(s) y cuenta con '+guards+' defensa(s); comprueba si una jugada rival puede expulsarlo ganando un tiempo.');}
   if(actual.piece==='q'&&played.history().length<12)facts.push('Sacaste la dama temprano; vigila si el rival puede atacarla mientras desarrolla sus piezas.');
   if(actual.piece==='p'&&!actual.captured&&!['e4','d4','e5','d5'].includes(actual.to))facts.push('Este avance deja casillas detrás que ya no podrán ser defendidas por otro peón. Identifica cuáles quedan débiles.');
   if(after.isCheck())facts.push('Tu rey está en jaque: la prioridad es salir del jaque, no continuar con un plan.');
