@@ -55,6 +55,21 @@ assert.match(demoMove, /if\(suggestNext\)await nextTrainingDemoMove\(\)/);
 // The explanation panel scrolls internally instead of pushing the board.
 assert.match(html, /#coachMessage\{[^}]*max-height:[^}]*overflow-y:auto/s);
 assert.match(html, /overscroll-behavior:contain/);
+assert.match(html, /\.coach-panel\{[^}]*height:210px[^}]*max-height:210px/s);
+assert.match(html, /#coachMessage\{[^}]*height:64px[^}]*overflow-y:auto/s);
+assert.match(html, /conditional=!candidate&&occupiedByOwn/);
+assert.match(html, /if\(m\.conditional\)\{const last=G\.g\.history\(\{verbose:true\}\)\.slice\(-1\)\[0\]/);
+assert.match(html, /last\.captured\|\|last\.to!==m\.to/);
+assert.match(html, /id="localMinutes"/);
+for (const minutes of ['3','5','10','20']) assert.match(html, new RegExp('<option value="'+minutes+'"'));
+assert.match(html, /function tickLocalClock\(\)/);
+assert.match(html, /function finishLocalOnTime\(loser\)/);
+assert.match(html, /Tiempo agotado\. Ganan /);
+assert.match(html, /localClockBeforeMove\(mover\)/);
+assert.match(html, /localClockAfterMove\(mover\)/);
+assert.match(html, /const nextChecks=checks\.map/);
+assert.match(html, /const nextCaptures=captures\.map/);
+assert.doesNotMatch(html, /Antes de confirmar una jugada, haz una pausa y busca en este orden/);
 
 // New mistake records keep the actual played move, which is drawn in red.
 assert.match(html, /playedUci:uci/);
