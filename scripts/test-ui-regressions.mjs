@@ -68,6 +68,10 @@ assert.match(html, /Tiempo agotado\. Ganan /);
 assert.match(html, /localClockBeforeMove\(mover\)/);
 assert.match(html, /localClockAfterMove\(mover\)/);
 assert.match(html, /const nextChecks=checks\.map/);
+assert.match(html, /const defendedBy=new Chess\(before\)\.attackers\(actual\.to/);
+assert.match(html, /const enemy=mover==='w'\?'b':'w',attacks=after\.attackers\(actual\.to/);
+assert.doesNotMatch(html, /Comprueba si la pieza capturada estaba defendida y qué queda desprotegido/);
+assert.doesNotMatch(html, /Desarrollaste una pieza menor\. Comprueba si controla casillas centrales/);
 assert.match(html, /const nextCaptures=captures\.map/);
 assert.doesNotMatch(html, /Antes de confirmar una jugada, haz una pausa y busca en este orden/);
 
