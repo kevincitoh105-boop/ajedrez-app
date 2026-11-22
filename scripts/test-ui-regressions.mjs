@@ -54,7 +54,7 @@ assert.equal(capturedPawn.captured, 'p');
 assert.ok(recaptureSetup.moves({ square: 'e6', verbose: true }).some(m => m.to === 'd5'),
   'e6xd5 must become legal only after White captures on d5');
 const noCapture = new Chess(recaptureFen);
-noCapture.move({ from: 'e4', to: 'e5' });
+noCapture.move({ from: 'a1', to: 'a2' });
 const noCaptureLast = noCapture.history({ verbose: true }).slice(-1)[0];
 assert.equal(!!(noCaptureLast.captured && noCaptureLast.to === 'd5'), false,
   'the queued recapture must be discarded when the opponent does not capture on d5');
