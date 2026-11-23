@@ -20,7 +20,7 @@ assert.match(premove, /mode!=='play'/);
 const tap = section('function tap(', '\nfunction promo');
 assert.doesNotMatch(tap, /shouldInterceptLocalPremove/);
 assert.doesNotMatch(html, /function shouldInterceptLocalPremove/);
-const enterLocal = section('function enterLocal()', "\n $('#t1').onclick");
+const enterLocal = section('function enterLocal()', "\n$('#t1').onclick");
 assert.match(enterLocal, /G\.premove=null;G\.premoveSel=null;G\.premoveSide=null/);
 const localCapture = new Chess('r6k/8/8/8/8/8/p7/R6K w - - 0 1');
 assert.ok(localCapture.moves({ square: 'a1', verbose: true }).some(m => m.to === 'a2'),
