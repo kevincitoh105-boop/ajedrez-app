@@ -214,7 +214,7 @@ const requiredFeatures = [
   ['avatar del entrenador', 'assets/coach.webp'],
   ['selección de color en lecciones', 'id="lessonSide"'],
   ['entrenador que acepta decisiones propias', 'async function lessonMove(m)'],
-  ['respuesta del rival calculada en directo', "const fen=T.c.fen(),result=await ask(fen,'depth 10',adaptiveEngineLevel(lessonStats()))"],
+  ['respuesta del rival calculada en directo con posición de sesión', "const fen=board.fen(),result=await ask(fen,'depth 10',adaptiveEngineLevel(lessonStats()))"],
   ['análisis de la jugada del alumno', "const after=await ask(afterFen,'depth 12',16)"],
   ['pistas calculadas para la posición actual', 'async function guidedHint()'],
   ['duración de clase basada en las jugadas reales del repertorio', 'for(const san of T.m){try{const played=countLine.move(san);if(played&&played.color===T.humanSide)T.guidedLimit++}catch(e){T.guidedLineActive=false;break}}'],
