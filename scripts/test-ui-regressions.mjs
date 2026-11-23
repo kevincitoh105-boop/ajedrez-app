@@ -122,7 +122,7 @@ assert.match(html, /\.sq\.premove-to/);
 
  // Eight supported languages translate original static and newly generated UI text.
  assert.match(html, /const TRANSLATIONS=\{/);
- for (const language of ['en','pt','fr','de','ru','zh','ar']) assert.match(html, new RegExp(language+':'));
+ assert.match(html, /en:0,pt:1,fr:2,de:3,ru:4,zh:5,ar:6/);
  assert.match(html, /function translateTree\(root\)/);
  assert.match(html, /new MutationObserver\(/);
  assert.match(html, /activeLanguage==='ar'\?'rtl':'ltr'/);
