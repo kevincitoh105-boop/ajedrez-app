@@ -433,6 +433,27 @@ async function move(m){
  finally{G.busy=false}
  if(epoch===gameEpoch&&mode===expectedMode&&G.g===game&&!G.over)await after();
 }
+function currentOpeningName(c){
+ if(!c||typeof c.history!=='function')return '';
+ const moves=c.history(),pgn=[];
+ for(let i=0;i<moves.length;i+=2)pgn.push((Math.floor(i/2)+1)+'.'+moves[i]+(moves[i+1]?' '+moves[i+1]:''));
+ const played=pgn.join(' ');
+ const openings=[
+  ['Sistema Londres','1.d4 d5 2.Nf3 Nf6 3.Bf4'],
+  ['Sistema Londres','1.d4 d5 2.Nf3 Nf6 3.e3'],
+  ['Sistema Londres','1.d4 Nf6 2.Nf3 e6 3.e3'],
+  ['Defensa Caro-Kann','1.e4 c6'],
+  ['Defensa Siciliana','1.e4 c5'],
+  ['Apertura Española','1.e4 e5 2.Nf3 Nc6 3.Bb5'],
+  ['Defensa Francesa','1.e4 e6'],
+  ['Defensa Ortodoxa','1.d4 d5 2.c4 e6 3.Nc3 Nf6 4.Bg5'],
+  ['Defensa Ortodoxa','1.d4 Nf6 2.Nf3 e6 3.e3 b6'],
+  ['Apertura Inglesa','1.c4'],
+  ['Apertura Réti','1.Nf3']
+ ];
+ for(const [name,prefix] of openings)if(played.startsWith(prefix))return name;
+ return moves.length?'Apertura en desarrollo':'';
+}
 function openingBookMove(fen,san){
  const lines=[
  '1.d4 d5 2.Nf3 Nf6 3.e3 e6 4.Bd3 c5 5.O-O Nc6 6.b3 Bd6',
