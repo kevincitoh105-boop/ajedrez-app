@@ -116,7 +116,7 @@ assert.match(html, /\.sq\.premove-to/);
  assert.match(theoryMove, /session!==T\.session\|\|T\.c!==board\|\|board\.fen\(\)!==before/);
  assert.match(theoryMove, /session!==T\.session\|\|T\.c!==board/);
  assert.match(html, /T\.session\+\+;T\.animating=false;T\.lesson=/);
- const theoryReplies = section('async function runGuidedReplies(){', '\nasync function lessonTap');
+ const theoryReplies = section('async function runGuidedReplies(){', '\nfunction lessonTap');
  assert.match(theoryReplies, /const session=T\.session,board=T\.c/);
  assert.match(theoryReplies, /session!==T\.session\|\|T\.c!==board/);
 
