@@ -279,7 +279,7 @@ const requiredFeatures = [
   ['chat de partida', 'id="chatPanel"'],
   ['selector de idiomas con traducción de controles', 'function applyLanguage(lang)'],
   ['clasificación de jugada teórica como de manual', 'DE MANUAL · '],
-  ['pistas permanentes del entrenador', 'if(T.guided&&!T.c.isGameOver())await guidedHint();'],
+  ['pistas permanentes del entrenador con protección de sesión', 'if(session===T.session&&T.guided&&!board.isGameOver())await guidedHint();'],
   ['curso ampliado de cálculo', 'Clase 75 · Cálculo de variantes'],
   ['curso ampliado de estrategia', 'Clase 82 · Convertir una ventaja sin precipitarse'],
   ['técnica de Lucena y puente', 'Clase 83 · Finales de torre: la posición de Lucena'],
