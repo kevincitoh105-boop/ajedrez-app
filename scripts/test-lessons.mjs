@@ -52,7 +52,7 @@ for (const [index, cut] of Object.entries(cutsSandbox.__lessonCuts)) {
     catch (error) { throw new Error('Línea temática inválida en ' + lessons[+index][0] + ' | ' + san + ': ' + error.message); }
   }
 }
-if (lessons.length !== 85) throw new Error('Se esperaban 82 lecciones (74 existentes + 8 clases didácticas originales nuevas); encontradas: ' + lessons.length);
+if (lessons.length !== 88) throw new Error('Se esperaban 88 lecciones (85 existentes + 3 nuevas sobre Kasparov–Topalov); encontradas: ' + lessons.length);
 for (let i = 36; i < 42; i++) {
   if (!lessons[i]?.[0]?.includes('PupiloChess') || !planSandbox.__planSetup.LESSON_STARTS[i])
     throw new Error('Falta una lección interactiva del video o su posición didáctica: índice ' + i);
@@ -86,6 +86,46 @@ const operaPuzzleBoard = new Chess(operaPuzzleSetup.fen);
 for (const san of operaPuzzleMoves) operaPuzzleBoard.move(san);
 if (!operaPuzzleBoard.isCheckmate())
   throw new Error('El ejercicio de Morphy no termina en jaque mate legal.');
+
+const kasparovIndex = lessons.findIndex(x => x[0].includes('Kasparov–Topalov, Wijk aan Zee 1999'));
+const kasparovSacrificeIndex = kasparovIndex + 1;
+const kasparovQuietIndex = kasparovIndex + 2;
+const kasparovGame = lessons[kasparovIndex];
+if (kasparovIndex < 0 || !kasparovGame?.[1]?.includes('44.Qa7') ||
+    !kasparovGame[6]?.includes('optichess.com') || !kasparovGame[6]?.includes('ramachess.com'))
+  throw new Error('Falta la partida histórica completa de Kasparov–Topalov o sus fuentes.');
+const kasparovReplay = new Chess();
+const kasparovMoves = parseMoves(kasparovGame[1]);
+for (const san of kasparovMoves) kasparovReplay.move(san);
+if (kasparovReplay.history().length !== 87 || kasparovReplay.isCheckmate())
+  throw new Error('Kasparov–Topalov debe reproducir 87 medias jugadas y terminar por abandono, no por mate.');
+if (!kasparovGame[3]?.includes('24...Kb6') || !kasparovGame[3]?.includes('28.Ra7') ||
+    !kasparovGame[3]?.includes('36.Bf1') || !kasparovGame[3]?.includes('37.Rd7'))
+  throw new Error('La lección histórica debe distinguir el sacrificio, las alternativas de motor y las jugadas tranquilas.');
+const kasparovSacrifice = lessons[kasparovSacrificeIndex];
+const kasparovQuiet = lessons[kasparovQuietIndex];
+if (!kasparovSacrifice?.[0]?.includes('24.Rxd4') || !kasparovQuiet?.[0]?.includes('36.Bf1'))
+  throw new Error('Faltan los dos ejercicios interactivos de la partida de Kasparov.');
+const kasparovSacrificeSetup = planSandbox.__planSetup.LESSON_STARTS[kasparovSacrificeIndex];
+if (!kasparovSacrificeSetup) throw new Error('No se generó la posición después de 23...Qd6.');
+const kasparovSacrificeMoves = parseMoves(kasparovSacrificeSetup.moves);
+if (kasparovSacrificeMoves.join(' ') !== 'Rxd4 cxd4 Re7+ Kb6 Qxd4+ Kxa5 b4+ Ka4')
+  throw new Error('El ejercicio 24.Rxd4 no coincide con la partida histórica.');
+const kasparovSacrificeBoard = new Chess(kasparovSacrificeSetup.fen);
+for (const san of kasparovSacrificeMoves) kasparovSacrificeBoard.move(san);
+const declineRook = new Chess(kasparovSacrificeSetup.fen);
+declineRook.move('Rxd4');
+declineRook.move('Kb6');
+if (declineRook.isCheckmate()) throw new Error('La defensa 24...Kb6 debe ser una alternativa legal, no un mate inventado.');
+const kasparovQuietSetup = planSandbox.__planSetup.LESSON_STARTS[kasparovQuietIndex];
+if (!kasparovQuietSetup) throw new Error('No se generó la posición después de 35...Kd1.');
+const kasparovQuietMoves = parseMoves(kasparovQuietSetup.moves);
+if (kasparovQuietMoves.join(' ') !== 'Bf1 Rd2 Rd7 Rxd7 Bxc4 bxc4 Qxh8')
+  throw new Error('El ejercicio 36.Bf1 no coincide con la secuencia histórica.');
+const kasparovQuietBoard = new Chess(kasparovQuietSetup.fen);
+for (const san of kasparovQuietMoves) kasparovQuietBoard.move(san);
+if (!html.includes("else if(/Kasparov/i.test(l[0]))$('#lessonSide').value='w';"))
+  throw new Error('Los ejercicios históricos de Kasparov deben comenzar con blancas para el alumno.');
 
 const lucenaIndex = lessons.findIndex(x => x[0].includes('posición de Lucena'));
 const philidorIndex = lessons.findIndex(x => x[0].includes('defensa Philidor y barrera'));
@@ -284,7 +324,10 @@ const requiredFeatures = [
   ['curso ampliado de estrategia', 'Clase 82 · Convertir una ventaja sin precipitarse'],
   ['técnica de Lucena y puente', 'Clase 83 · Finales de torre: la posición de Lucena'],
   ['barrera defensiva de Philidor', 'Clase 84 · Finales de torre: defensa Philidor'],
-  ['jaques por detrás en Philidor', 'Clase 85 · Finales de torre: cambiar a los jaques por detrás']
+  ['jaques por detrás en Philidor', 'Clase 85 · Finales de torre: cambiar a los jaques por detrás'],
+  ['partida histórica Kasparov–Topalov', 'Clase 86 · Partida histórica: Kasparov–Topalov, Wijk aan Zee 1999'],
+  ['sacrificio de torre de Kasparov', 'Clase 87 · Táctica histórica: el sacrificio de torre 24.Rxd4'],
+  ['jugada tranquila de Kasparov', 'Clase 88 · Cálculo avanzado: la jugada tranquila 36.Bf1']
 ];
 for (const [name, marker] of requiredFeatures) {
   if (!html.includes(marker)) throw new Error('Falta implementar o conectar: ' + name);
