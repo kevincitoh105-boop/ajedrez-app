@@ -91,7 +91,7 @@ const kasparovIndex = lessons.findIndex(x => x[0].includes('Kasparov–Topalov, 
 const kasparovSacrificeIndex = kasparovIndex + 1;
 const kasparovQuietIndex = kasparovIndex + 2;
 const kasparovGame = lessons[kasparovIndex];
-if (kasparovIndex < 0 || !kasparovGame?.[1]?.includes('44.Qa7') ||
+if (kasparovIndex < 0 || !kasparovGame?.[1]?.trim().endsWith('Qa7') ||
     !kasparovGame[6]?.includes('optichess.com') || !kasparovGame[6]?.includes('ramachess.com'))
   throw new Error('Falta la partida histórica completa de Kasparov–Topalov o sus fuentes.');
 const kasparovReplay = new Chess();
